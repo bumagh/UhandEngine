@@ -1,0 +1,30 @@
+{
+    "env": {
+        "INCSDL2": ["E:\\3pro\\1learn\\1c\\2-demo\\1-sdl\\sdl2-remake-of-Honor-of-Kings\\include"]
+  },
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${env:INCSDL2}"
+            ],
+            "browse": {
+                "path": [
+                    "${env:INCSDL2}",
+                    "${workspaceRoot}"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "compilerPath": "D:\\3env\\mingw13\\mingw64\\bin\\gcc.exe",
+            "cppStandard": "gnu++14"
+        }
+    ],
+    "version": 4
+}

@@ -1,12 +1,11 @@
 # Prerequisites
 *.d
-
-# Object files
 *.o
+# Object files
 *.ko
 *.obj
 *.elf
-
+*.exe
 # Linker output
 *.ilk
 *.map
@@ -17,20 +16,14 @@
 *.pch
 
 # Libraries
-*.lib
-*.a
 *.la
 *.lo
 
 # Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
+
 *.dylib
 
 # Executables
-*.exe
-*.out
 *.app
 *.i*86
 *.x86_64
@@ -50,3 +43,6 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+*.zip
+# web path
+/web/test*/*
