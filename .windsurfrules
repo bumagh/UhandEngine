@@ -1,0 +1,84 @@
+# UhandEngine Windsurf Rules
+
+## Project Identity
+
+- This project is a lightweight game engine prototype built with `C + SDL2`.
+- It targets both native desktop builds and Web builds through `Emscripten`.
+- The primary long-term direction is an **AI-first game engine**.
+- The first alignment target for architecture and developer experience is **PhaserJS**.
+
+## Core Engineering Direction
+
+- Prefer **Scene-first** runtime organization.
+- Prefer **Phaser-like 2D mental model** over ad-hoc feature growth.
+- Prefer **small, verifiable, modular changes**.
+- Prefer **documentation-backed refactors**.
+- Prefer **AI-friendly naming, boundaries, and file organization**.
+
+## Architectural Preferences
+
+- `Scene` should become the main runtime unit.
+- `GameObject` remains the base entity abstraction.
+- `Component` should evolve into a standardized contract.
+- `Transform` should evolve toward a 2D-first model.
+- Input, Asset, Event, Camera, Animation, and Render should become explicit subsystems.
+- Do not add major features directly into `main.c` unless it is unavoidable.
+
+## PhaserJS Alignment Priorities
+
+When adding or refactoring runtime features, align with these concepts first:
+
+1. `Scene`
+2. `GameObject`
+3. `Container`
+4. `Sprite`
+5. `Text`
+6. `Input`
+7. `Loader`
+8. `Camera`
+9. `Animation`
+10. `Tween`
+
+## Code Change Rules
+
+- Do not make unrelated refactors.
+- Do not rename files, symbols, or directories without clear architectural value.
+- Do not break native and web build compatibility.
+- Keep interfaces predictable and stable.
+- Prefer adding or improving module boundaries instead of stacking logic in a single file.
+- If a change affects architecture, update the corresponding docs in `doc/`.
+
+## Documentation Rules
+
+- Keep `README.md` aligned with the current project status.
+- Keep `doc/architecture.md` as the authoritative architecture overview.
+- Keep `doc/phaser-ai-alignment-roadmap.md` aligned with future engine direction.
+- Keep `doc/monthly-update-plan.md` aligned with near-term execution priorities.
+- Keep `doc/swe1.6-prompt-and-skills.md` aligned with AI collaboration workflows.
+
+## AI Collaboration Rules
+
+When acting as an AI coding agent in this repository:
+
+- Read relevant files before editing.
+- Summarize current structure before major changes.
+- Prefer minimal patches over large rewrites.
+- Explain affected modules and risks.
+- If current code is not ready for a requested feature, propose the smallest architecture step first.
+- Treat documentation, prompts, and rules as part of the product, not optional extras.
+
+## Preferred Near-Term Work
+
+- Promote `Scene` into the real runtime owner.
+- Refine `GameObject` / `Component` boundaries.
+- Create `AssetManager` and `InputManager` abstractions.
+- Add Phaser-like `Text` / `Sprite` / `Container` direction.
+- Prepare scene-schema and AI-driven workflow support.
+
+## Avoid
+
+- Large unplanned rewrites
+- Mixing platform code and gameplay logic everywhere
+- Hardcoding assets in many locations
+- Expanding random features without documenting ownership
+- Designing APIs that are difficult for AI to infer or continue
