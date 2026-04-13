@@ -46,3 +46,6 @@ dkms.conf
 *.zip
 # web path
 /web/test*/*
+/engine-ref
+# Environment variables (contains API keys)
+.env

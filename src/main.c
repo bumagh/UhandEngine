@@ -49,6 +49,16 @@ TTF_Font *font;
 SDL_Color textMenuColor = {0, 0, 0, 255};
 
 int gMusicCondition = 1;
+
+// MVP: UIComponent 全局变量
+UIComponent *titleText = NULL;
+UIComponent *startButton = NULL;
+
+// MVP: 点击回调函数
+void onStartButtonClick(void *data)
+{
+    printf("Start button clicked!\n");
+}
 int init()
 {
     srand(time(NULL));
@@ -129,8 +139,30 @@ void tick()
     {
         handleButtons();
     }
+
+    // MVP: 更新 UIComponent
+    if (titleText)
+    {
+        updateUIComponent((Component *)titleText);
+    }
+    if (startButton)
+    {
+        updateUIComponent((Component *)startButton);
+    }
+
     SDL_SetRenderDrawColor(renderer, 117, 117, 117, 255);
     SDL_RenderClear(renderer);
+
+    // MVP: 渲染 UIComponent
+    if (titleText)
+    {
+        renderUIComponent((Component *)titleText, renderer);
+    }
+    if (startButton)
+    {
+        renderUIComponent((Component *)startButton, renderer);
+    }
+
     SDL_RenderPresent(renderer);
     // 更新 lastTime，准备下一帧使用
     lastTime = currentTime;
@@ -156,6 +188,18 @@ void quit()
         font = NULL;
     }
 
+    // MVP: 释放 UIComponent
+    if (titleText)
+    {
+        free(titleText);
+        titleText = NULL;
+    }
+    if (startButton)
+    {
+        free(startButton);
+        startButton = NULL;
+    }
+
     // 调用销毁函数并释放 GameObjectList 资源
     if (goList)
     {
@@ -176,6 +220,16 @@ void gameInit()
     // 调用生命周期函数
     GameObjectList_CallAwake(goList);
     GameObjectList_CallStart(goList);
+
+    // MVP: 创建标题文本
+    SDL_Color titleColor = {255, 255, 255, 255};
+    SDL_Color titleBgColor = {50, 50, 50, 255};
+    titleText = createUIComponent(w/2 - 100, h/2 - 100, 200, 50, titleBgColor, "UhandEngine MVP", font, titleColor, NULL);
+
+    // MVP: 创建开始按钮
+    SDL_Color buttonColor = {100, 150, 255, 255};
+    SDL_Color buttonTextColor = {255, 255, 255, 255};
+    startButton = createUIComponent(w/2 - 75, h/2 + 20, 150, 40, buttonColor, "Start", font, buttonTextColor, onStartButtonClick);
 }
 void loop()
 {
