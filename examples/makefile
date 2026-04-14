@@ -28,21 +28,21 @@ all: $(EXAMPLES)
 ../src/%.o: ../src/%.c
 	$(CC) -c $^ $(CFLAGS) $(SFLAGS) $(FONTS_FLAGS) $(MIXER_FLAGS) -o $@
 
-# 编译各个示例（简化版，不链接 SDL）
+# 编译各个示例（链接 SDL）
 sprite_example: sprite_example.c $(ENGINE_OBJECTS)
-	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -lm -mconsole
+	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
 
 text_example: text_example.c $(ENGINE_OBJECTS)
-	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -lm -mconsole
+	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
 
 container_example: container_example.c $(ENGINE_OBJECTS)
-	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -lm -mconsole
+	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
 
 properties_example: properties_example.c $(ENGINE_OBJECTS)
-	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -lm -mconsole
+	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
 
 scene_example: scene_example.c $(ENGINE_OBJECTS)
-	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -lm -mconsole
+	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
 
 clean:
 	del /Q $(EXAMPLES) 2>nul || true

@@ -10,6 +10,7 @@
 #define SDL_MAIN_HANDLED
 #include "../src/engine/gameObject.h"
 #include "../src/engine/transform.h"
+#include <SDL2/SDL.h>
 #include <stdio.h>
 
 void sprite_example()
@@ -59,7 +60,76 @@ void sprite_example()
 
 int main(int argc, char *argv[])
 {
+    // 初始化 SDL
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    {
+        printf("SDL_Init failed: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    // 创建窗口
+    SDL_Window *window = SDL_CreateWindow("Sprite Example",
+                                          SDL_WINDOWPOS_CENTERED,
+                                          SDL_WINDOWPOS_CENTERED,
+                                          800, 600,
+                                          SDL_WINDOW_SHOWN);
+    if (!window)
+    {
+        printf("SDL_CreateWindow failed: %s\n", SDL_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
+    // 创建渲染器
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (!renderer)
+    {
+        printf("SDL_CreateRenderer failed: %s\n", SDL_GetError());
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    // 运行示例
     sprite_example();
+
+    printf("\nPress Q to quit...\n");
+
+    // 主循环
+    int running = 1;
+    SDL_Event event;
+    while (running)
+    {
+        while (SDL_PollEvent(&event))
+        {
+            if (event.type == SDL_QUIT)
+            {
+                running = 0;
+            }
+            else if (event.type == SDL_KEYDOWN)
+            {
+                if (event.key.keysym.sym == SDLK_q)
+                {
+                    running = 0;
+                }
+            }
+        }
+
+        // 清屏
+        SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
+        SDL_RenderClear(renderer);
+
+        // 渲染
+        SDL_RenderPresent(renderer);
+
+        SDL_Delay(16); // ~60 FPS
+    }
+
+    // 清理
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
     return 0;
 }
 

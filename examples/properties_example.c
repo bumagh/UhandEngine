@@ -7,6 +7,7 @@
 #define SDL_MAIN_HANDLED
 #include "../src/engine/gameObject.h"
 #include "../src/engine/transform.h"
+#include <SDL2/SDL.h>
 #include <stdio.h>
 
 void properties_example()
@@ -39,7 +40,7 @@ void properties_example()
         printf("%s visible: %d (default visible)\n", obj1->name, obj1->visible);
         printf("%s visible: %d (default visible)\n", obj2->name, obj2->visible);
         printf("%s visible: %d (default visible)\n", obj3->name, obj3->visible);
-        
+
         // 隐藏一个对象
         setVisible(obj4, 0);
         printf("%s visible: %d (set to invisible)\n", obj4->name, obj4->visible);
@@ -50,7 +51,7 @@ void properties_example()
         printf("%s active: %d (default active)\n", obj1->name, obj1->active);
         printf("%s active: %d (default active)\n", obj2->name, obj2->active);
         printf("%s active: %d (default active)\n", obj3->name, obj3->active);
-        
+
         // 停用一个对象（不参与 Update）
         setActive(obj4, 0);
         printf("%s active: %d (set to inactive)\n", obj4->name, obj4->active);
@@ -80,11 +81,11 @@ void properties_example()
         printf("Making player invisible...\n");
         setVisible(obj2, 0);
         printf("%s visible: %d\n", obj2->name, obj2->visible);
-        
+
         printf("Pausing background updates...\n");
         setActive(obj1, 0);
         printf("%s active: %d\n", obj1->name, obj1->active);
-        
+
         printf("Bringing UI to front...\n");
         setDepth(obj3, 100);
         printf("%s depth: %d\n", obj3->name, obj3->depth);
@@ -101,6 +102,75 @@ void properties_example()
 
 int main(int argc, char *argv[])
 {
+    // 初始化 SDL
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    {
+        printf("SDL_Init failed: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    // 创建窗口
+    SDL_Window *window = SDL_CreateWindow("Properties Example",
+                                          SDL_WINDOWPOS_CENTERED,
+                                          SDL_WINDOWPOS_CENTERED,
+                                          800, 600,
+                                          SDL_WINDOW_SHOWN);
+    if (!window)
+    {
+        printf("SDL_CreateWindow failed: %s\n", SDL_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
+    // 创建渲染器
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (!renderer)
+    {
+        printf("SDL_CreateRenderer failed: %s\n", SDL_GetError());
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    // 运行示例
     properties_example();
+
+    printf("\nPress Q to quit...\n");
+
+    // 主循环
+    int running = 1;
+    SDL_Event event;
+    while (running)
+    {
+        while (SDL_PollEvent(&event))
+        {
+            if (event.type == SDL_QUIT)
+            {
+                running = 0;
+            }
+            else if (event.type == SDL_KEYDOWN)
+            {
+                if (event.key.keysym.sym == SDLK_q)
+                {
+                    running = 0;
+                }
+            }
+        }
+
+        // 清屏
+        SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
+        SDL_RenderClear(renderer);
+
+        // 渲染
+        SDL_RenderPresent(renderer);
+
+        SDL_Delay(16); // ~60 FPS
+    }
+
+    // 清理
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
     return 0;
 }
