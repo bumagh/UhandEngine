@@ -15,6 +15,7 @@ typedef struct UIComponent
     TTF_Font *font;           // 字体
     SDL_Color textColor;      // 文本颜色
     void (*onClick)(void*);   // 点击事件处理函数指针
+    int mousePressed;         // 鼠标按下状态（用于防抖动）
 } UIComponent;
 
 // 创建一个新的 UI 组件
