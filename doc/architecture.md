@@ -36,7 +36,25 @@ UhandEngine/
 │     ├─ Scene.c / Scene.h
 │     ├─ list.c / list.h
 │     ├─ algorithm.c / algorithm.h
+│     ├─ AssetManager.c / AssetManager.h
+│     ├─ RenderQueue.c / RenderQueue.h
+│     ├─ InputManager.c / InputManager.h
+│     ├─ Camera.c / Camera.h
+│     ├─ Animation.c / Animation.h
 │     └─ UI/
+│        └─ TextComponent.c / TextComponent.h
+├─ examples/
+│  ├─ sprite_example.c
+│  ├─ text_example.c
+│  ├─ container_example.c
+│  ├─ properties_example.c
+│  ├─ scene_example.c
+│  ├─ render_example.c
+│  ├─ asset_example.c
+│  ├─ renderqueue_example.c
+│  ├─ input_example.c
+│  ├─ camera_example.c
+│  └─ animation_example.c
 ├─ test/
 └─ web/
    ├─ UhandEngine/
@@ -200,6 +218,88 @@ main
 - 编辑器消息系统
 - AI Agent 工具调用总线
 
+## 4.8 `AssetManager`
+
+文件：`src/engine/AssetManager.h`、`src/engine/AssetManager.c`
+
+职责：
+
+- 统一管理游戏资源（纹理、字体、声音、音乐）
+- 提供资源缓存和引用计数
+- 自动资源释放
+
+当前功能：
+
+- 纹理加载（SDL_image）
+- 字体加载（SDL_ttf）
+- 声音加载（SDL_mixer）
+- 音乐加载（SDL_mixer）
+- 资源去重和引用计数
+
+## 4.9 `RenderQueue`
+
+文件：`src/engine/RenderQueue.h`、`src/engine/RenderQueue.c`
+
+职责：
+
+- 管理渲染队列
+- 按 depth 排序
+- 自动处理可见性和父子关系
+
+当前功能：
+
+- 添加 GameObject 到队列
+- 按 depth 排序（从小到大）
+- 渲染时检查 visible/active 状态
+- 递归检查父对象可见性
+
+## 4.10 `InputManager`
+
+文件：`src/engine/InputManager.h`、`src/engine/InputManager.c`
+
+职责：
+
+- 统一输入处理
+- 键盘状态管理
+- 鼠标状态管理
+
+当前功能：
+
+- 键盘按下、按下瞬间、释放瞬间检测
+- 鼠标位置、按钮、滚轮检测
+- 状态更新和查询接口
+
+## 4.11 `Camera`
+
+文件：`src/engine/Camera.h`、`src/engine/Camera.c`
+
+职责：
+
+- 视口控制
+- 坐标变换
+
+当前功能：
+
+- 位置、缩放、旋转控制
+- 世界坐标与屏幕坐标转换
+- 视口矩形获取
+
+## 4.12 `Animation`
+
+文件：`src/engine/Animation.h`、`src/engine/Animation.c`
+
+职责：
+
+- 动画播放管理
+- 帧动画支持
+
+当前功能：
+
+- 帧动画定义
+- 循环播放
+- 播放速度控制
+- 暂停/恢复/停止
+
 ## 5. 当前架构优点
 
 - **跨平台基础已具备**：桌面端与 Web 端构建路径都已存在
@@ -317,18 +417,18 @@ UhandEngine 不需要完全复制 PhaserJS，但建议优先对齐其“使用�
 
 建议的映射关系：
 
-| PhaserJS 概念 | UhandEngine 当前基础 | 建议演进方向 |
-| --- | --- | --- |
-| Scene | `Scene` / `GameObjectList` | 统一为真正的场景运行单元 |
-| GameObject | `GameObject` | 作为所有实体基础类型 |
-| Components | `Component` | 形成统一组件协议与反射描述 |
-| Text | `UIComponent` + TTF | 拆出独立文本对象 |
-| Container | 暂无 | 引入父子层级容器 |
-| Input | SDL Event | 抽象为统一输入系统 |
-| Loader | `loadMedia()` | 升级为资源管理器 |
-| Time / Tween | 暂无 | 引入时间轴与补间系统 |
-| Camera | 暂无 | 引入 2D 摄像机模型 |
-| Animation | 暂无 | 建立序列帧与状态机 |
+| PhaserJS 概念 | UhandEngine 当前基础 | 建议演进方向 | 状态 |
+| --- | --- | --- | --- |
+| Scene | `Scene` / `GameObjectList` | 统一为真正的场景运行单元 | ✅ 已完成 |
+| GameObject | `GameObject` | 作为所有实体基础类型 | ✅ 已完成 |
+| Components | `Component` | 形成统一组件协议与反射描述 | 🔄 进行中 |
+| Text | `UIComponent` + TTF | 拆出独立文本对象 | ✅ 已完成（TextComponent） |
+| Container | 父子关系支持 | 引入父子层级容器 | ✅ 已完成 |
+| Input | SDL Event | 抽象为统一输入系统 | ✅ 已完成（InputManager） |
+| Loader | `loadMedia()` | 升级为资源管理器 | ✅ 已完成（AssetManager） |
+| Time / Tween | 暂无 | 引入时间轴与补间系统 | ⏳ 待实现 |
+| Camera | 暂无 | 引入 2D 摄像机模型 | ✅ 已完成（Camera） |
+| Animation | 暂无 | 建立序列帧与状态机 | ✅ 已完成（Animation） |
 
 ## 7.3 为什么优先对齐 PhaserJS
 
