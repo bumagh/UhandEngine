@@ -28,30 +28,49 @@ UhandEngine 是一个基于 `C + SDL2` 的轻量游戏引擎原型，当前面�
 - **对象模型**
   - `GameObject` 作为基础实体
   - `Component` 作为组件抽象
-  - `Transform` 作为默认基础组件
+  - `Transform` 作为默认基础组件（2D-first）
 
 - **对象集合与生命周期**
   - `GameObjectList` 负责对象存储与批量调用 `Awake / Start / Update / LateUpdate / FixedUpdate / Destroy`
 
 - **UI 与交互雏形**
   - `UIComponent` 已提供基本文本与点击处理能力
+  - `TextComponent` 支持中文文本渲染
 
 - **事件系统**
   - `event.c / event.h` 提供简单事件注册与派发能力
 
-- **Scene 雏形**
-  - `Scene.c / Scene.h` 已存在，但尚未成为真正的运行时主单元
+- **Scene 系统**
+  - `Scene` 已成为真正的运行时主单元
+  - 集成 `RenderQueue` 支持 depth 排序渲染
+
+- **资源管理**
+  - `AssetManager` 统一管理纹理、字体、声音、音乐
+  - 支持资源缓存和引用计数
+
+- **输入系统**
+  - `InputManager` 统一处理键盘和鼠标输入
+  - 支持按下、按下瞬间、释放瞬间检测
+
+- **摄像机系统**
+  - `Camera` 支持位置、缩放、旋转控制
+  - 提供世界坐标与屏幕坐标转换
+
+- **动画系统**
+  - `Animation` 支持帧动画播放
+  - `Animator` 支持循环、暂停、速度控制
+
+- **补间系统**
+  - `Tween` 支持属性补间动画
+  - 多种缓动函数（Linear, Quad, Cubic, Elastic）
 
 - **双端构建能力**
   - 已支持桌面构建
   - 已支持 `Emscripten` Web 输出
 
-- **当前 Web-first MVP 进展**
-  - Web 页面已经可以显示最小菜单场景
-  - 当前菜单已包含 `Main Menu`、`Start Game`、`Settings`、`Quit`
-  - 按钮点击已有最小响应
-  - 已接入 Claude API 的本地脚本调用能力
-  - 已有 Scene Schema 示例与 AI 输出到 MVP 的映射说明
+- **示例程序**
+  - 13 个示例程序展示各个系统的使用
+  - 综合示例展示系统集成
 
 ## 当前核心目录
 
