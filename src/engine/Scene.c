@@ -139,6 +139,48 @@ void Scene_RenderUI(Scene *scene, SDL_Renderer *renderer)
     }
 }
 
+// 检查 GameObject 及其父对象是否可见
+int IsGameObjectVisible(GameObject *go)
+{
+    if (go == NULL)
+        return 0;
+
+    // 检查自身可见性
+    if (!go->visible)
+        return 0;
+
+    // 递归检查父对象可见性
+    if (go->parent != NULL)
+    {
+        return IsGameObjectVisible(go->parent);
+    }
+
+    return 1;
+}
+
+void Scene_RenderGameObjects(Scene *scene, SDL_Renderer *renderer)
+{
+    if (scene == NULL || renderer == NULL || scene->gameObjectList == NULL)
+        return;
+
+    GameObject *current = scene->gameObjectList->head;
+
+    // 第一遍：收集可见且激活的 GameObject
+    // TODO: 后续优化为按 depth 排序
+    while (current != NULL)
+    {
+        // 检查 active 和 visible 状态
+        if (current->active && IsGameObjectVisible(current))
+        {
+            if (current->render)
+            {
+                current->render(current, renderer, NULL);
+            }
+        }
+        current = current->next;
+    }
+}
+
 void Scene_DestroyAll(Scene *scene)
 {
     if (scene == NULL || scene->gameObjectList == NULL)

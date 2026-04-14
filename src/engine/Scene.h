@@ -29,6 +29,7 @@ void Scene_Awake(Scene *scene);
 void Scene_Start(Scene *scene);
 void Scene_Update(Scene *scene);
 void Scene_UpdateUI(Scene *scene);
+void Scene_RenderGameObjects(Scene *scene, SDL_Renderer *renderer);
 void Scene_RenderUI(Scene *scene, SDL_Renderer *renderer);
 void Scene_DestroyAll(Scene *scene);
 
