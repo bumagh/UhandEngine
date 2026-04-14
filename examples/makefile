@@ -13,7 +13,8 @@ ENGINE_SOURCES = ../src/engine/Scene.c \
                  ../src/engine/algorithm.c \
                  ../src/engine/transform.c \
                  ../src/engine/component.c \
-                 ../src/engine/list.c
+                 ../src/engine/list.c \
+                 ../src/engine/UI/TextComponent.c
 
 ENGINE_OBJECTS=$(ENGINE_SOURCES:.c=.o)
 
@@ -33,7 +34,7 @@ sprite_example: sprite_example.c $(ENGINE_OBJECTS)
 	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
 
 text_example: text_example.c $(ENGINE_OBJECTS)
-	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
+	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -lSDL2_ttf -L$(SDL2_LIB_PATH)/SDL2_ttf_2.20.2 -mconsole
 
 container_example: container_example.c $(ENGINE_OBJECTS)
 	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole

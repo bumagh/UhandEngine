@@ -1,55 +1,14 @@
 /**
  * Text Example
  *
- * 演示如何创建和使用 Text GameObject
- *
- * 注意：当前 Text 是简化实现，需要集成 TextComponent
- * 本示例展示 API 设计，实际运行需要先完成 TextComponent 集成
+ * 演示如何使用 TextComponent 实际渲染文本
  */
 
 #define SDL_MAIN_HANDLED
-#include "../src/engine/gameObject.h"
-#include "../src/engine/transform.h"
+#include "../src/engine/UI/TextComponent.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <stdio.h>
-
-void text_example()
-{
-    printf("=== Text Example ===\n\n");
-
-    // 假设已加载字体
-    TTF_Font *font = NULL; // 占位符
-    SDL_Color color = {255, 255, 255, 255};
-
-    // 创建一个 Text GameObject
-    GameObject *text = createText("ScoreText", "Score: 100", font, color, 50.0f, 50.0f);
-
-    if (text)
-    {
-        printf("Created Text: %s\n", text->name);
-        printf("Type: %d (GAMEOBJECT_TYPE_TEXT = %d)\n", text->type, GAMEOBJECT_TYPE_TEXT);
-
-        if (text->transform)
-        {
-            printf("Position: (%.2f, %.2f)\n", text->transform->x, text->transform->y);
-        }
-
-        printf("Visible: %d\n", text->visible);
-        printf("Active: %d\n", text->active);
-        printf("Depth: %d\n\n", text->depth);
-
-        // TODO: 需要集成 TextComponent 才能实际渲染
-        printf("Note: 实际渲染需要先集成 TextComponent\n");
-
-        // 释放 (在实际使用中应该通过 Scene 管理)
-        // text->free(text);
-    }
-    else
-    {
-        printf("Failed to create Text\n");
-    }
-}
 
 int main(int argc, char *argv[])
 {
@@ -63,6 +22,14 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // 初始化 SDL_ttf
+    if (TTF_Init() < 0)
+    {
+        printf("TTF_Init failed: %s\n", TTF_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
     // 创建窗口
     SDL_Window *window = SDL_CreateWindow("Text Example",
                                           SDL_WINDOWPOS_CENTERED,
@@ -72,6 +39,7 @@ int main(int argc, char *argv[])
     if (!window)
     {
         printf("SDL_CreateWindow failed: %s\n", SDL_GetError());
+        TTF_Quit();
         SDL_Quit();
         return 1;
     }
@@ -82,18 +50,66 @@ int main(int argc, char *argv[])
     {
         printf("SDL_CreateRenderer failed: %s\n", SDL_GetError());
         SDL_DestroyWindow(window);
+        TTF_Quit();
         SDL_Quit();
         return 1;
     }
 
-    // 运行示例
-    text_example();
+    // 加载字体
+    TTF_Font *font = TTF_OpenFont("assets/fzpix.ttf", 48);
+    if (!font)
+    {
+        printf("Failed to load font: %s\n", TTF_GetError());
+        printf("Using default system font...\n");
+    }
+
+    printf("=== Text Example ===\n\n");
+
+    // 创建 TextComponent
+    TextComponent *textComp1 = NULL;
+    newTextComponent(&textComp1);
+
+    SDL_Color color1 = {255, 255, 255, 255}; // 白色
+    if (textComp1 && font)
+    {
+        textComp1->init(textComp1, renderer, font, "UhandEngine Text Demo", color1);
+        textComp1->dstRect.x = 50;
+        textComp1->dstRect.y = 50;
+        printf("Created TextComponent: %s\n", textComp1->base.name);
+    }
+
+    // 创建第二个 TextComponent
+    TextComponent *textComp2 = NULL;
+    newTextComponent(&textComp2);
+
+    SDL_Color color2 = {255, 100, 100, 255}; // 红色
+    if (textComp2 && font)
+    {
+        textComp2->init(textComp2, renderer, font, "Press Q to quit", color2);
+        textComp2->dstRect.x = 50;
+        textComp2->dstRect.y = 550;
+        printf("Created TextComponent: %s\n", textComp2->base.name);
+    }
+
+    // 创建第三个 TextComponent (大字体)
+    TextComponent *textComp3 = NULL;
+    newTextComponent(&textComp3);
+
+    SDL_Color color3 = {100, 255, 255, 255}; // 青色
+    if (textComp3 && font)
+    {
+        textComp3->init(textComp3, renderer, font, "Hello World!", color3);
+        textComp3->dstRect.x = 250;
+        textComp3->dstRect.y = 250;
+        printf("Created TextComponent: %s\n", textComp3->base.name);
+    }
 
     printf("\nPress Q to quit...\n");
 
     // 主循环
     int running = 1;
     SDL_Event event;
+
     while (running)
     {
         while (SDL_PollEvent(&event))
@@ -115,6 +131,20 @@ int main(int argc, char *argv[])
         SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
         SDL_RenderClear(renderer);
 
+        // 绘制 TextComponent
+        if (textComp1 && textComp1->base.draw)
+        {
+            textComp1->base.draw((Component *)textComp1, renderer);
+        }
+        if (textComp2 && textComp2->base.draw)
+        {
+            textComp2->base.draw((Component *)textComp2, renderer);
+        }
+        if (textComp3 && textComp3->base.draw)
+        {
+            textComp3->base.draw((Component *)textComp3, renderer);
+        }
+
         // 渲染
         SDL_RenderPresent(renderer);
 
@@ -122,9 +152,29 @@ int main(int argc, char *argv[])
     }
 
     // 清理
+    if (textComp1 && textComp1->base.free)
+    {
+        textComp1->base.free((Component *)textComp1);
+    }
+    if (textComp2 && textComp2->base.free)
+    {
+        textComp2->base.free((Component *)textComp2);
+    }
+    if (textComp3 && textComp3->base.free)
+    {
+        textComp3->base.free((Component *)textComp3);
+    }
+
+    if (font)
+    {
+        TTF_CloseFont(font);
+    }
+
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    TTF_Quit();
     SDL_Quit();
 
+    printf("Text Example ended\n");
     return 0;
 }
