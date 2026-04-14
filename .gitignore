@@ -51,3 +51,5 @@ dkms.conf
 .env
 web/UhandEngine/index.js
 web/UhandEngine/index.wasm
+web/UhandEngine/index.data
+web/UhandEngine/index.html
