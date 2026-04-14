@@ -1,9 +1,10 @@
 /**
  * Container Example
- * 
+ *
  * 演示如何创建 Container 并管理父子关系
  */
 
+#define SDL_MAIN_HANDLED
 #include "../src/engine/gameObject.h"
 #include "../src/engine/transform.h"
 #include <stdio.h>
@@ -100,7 +101,7 @@ void container_example()
     printf("\nNote: 实际使用中应该通过 Scene 管理 GameObject 生命周期\n");
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     container_example();
     return 0;

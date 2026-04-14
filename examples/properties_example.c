@@ -1,9 +1,10 @@
 /**
  * Properties Example
- * 
+ *
  * 演示 GameObject 的 visible、active、depth 属性的使用
  */
 
+#define SDL_MAIN_HANDLED
 #include "../src/engine/gameObject.h"
 #include "../src/engine/transform.h"
 #include <stdio.h>
@@ -98,7 +99,7 @@ void properties_example()
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     properties_example();
     return 0;

@@ -1,12 +1,13 @@
 /**
  * Text Example
- * 
+ *
  * 演示如何创建和使用 Text GameObject
- * 
+ *
  * 注意：当前 Text 是简化实现，需要集成 TextComponent
  * 本示例展示 API 设计，实际运行需要先完成 TextComponent 集成
  */
 
+#define SDL_MAIN_HANDLED
 #include "../src/engine/gameObject.h"
 #include "../src/engine/transform.h"
 #include <SDL2/SDL.h>
@@ -59,7 +60,7 @@ void text_example()
     // SDL_Quit();
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     text_example();
     return 0;

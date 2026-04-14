@@ -1,9 +1,10 @@
 /**
  * Scene Example
- * 
+ *
  * 演示如何在 Scene 中使用 GameObject 的 2D 基础能力
  */
 
+#define SDL_MAIN_HANDLED
 #include "../src/engine/Scene.h"
 #include "../src/engine/gameObject.h"
 #include "../src/engine/transform.h"
@@ -119,7 +120,7 @@ void scene_example()
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     scene_example();
     return 0;
