@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
     }
 
     // 加载字体
-    TTF_Font *font = TTF_OpenFont("assets/fzpix.ttf", 48);
+    TTF_Font *font = TTF_OpenFont("fzpix.ttf", 48);
     if (!font)
     {
         printf("Failed to load font: %s\n", TTF_GetError());
