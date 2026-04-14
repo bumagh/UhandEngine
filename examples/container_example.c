@@ -166,6 +166,24 @@ int main(int argc, char *argv[])
         SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
         SDL_RenderClear(renderer);
 
+        // 绘制 Container（用大矩形表示）
+        SDL_Rect containerRect = {100, 100, 200, 150};
+        SDL_SetRenderDrawColor(renderer, 255, 100, 100, 255);
+        SDL_RenderFillRect(renderer, &containerRect);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer, &containerRect);
+
+        // 绘制子对象（用小矩形表示）
+        SDL_Rect child1Rect = {150, 150, 30, 30};
+        SDL_SetRenderDrawColor(renderer, 100, 255, 100, 255);
+        SDL_RenderFillRect(renderer, &child1Rect);
+        SDL_RenderDrawRect(renderer, &child1Rect);
+
+        SDL_Rect child2Rect = {200, 200, 30, 30};
+        SDL_SetRenderDrawColor(renderer, 100, 255, 100, 255);
+        SDL_RenderFillRect(renderer, &child2Rect);
+        SDL_RenderDrawRect(renderer, &child2Rect);
+
         // 渲染
         SDL_RenderPresent(renderer);
 

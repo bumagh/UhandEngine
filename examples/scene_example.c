@@ -177,6 +177,30 @@ int main(int argc, char *argv[])
         SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
         SDL_RenderClear(renderer);
 
+        // 绘制 Scene 中的对象
+        // Background (depth: 0)
+        SDL_Rect bgRect = {0, 0, 800, 600};
+        SDL_SetRenderDrawColor(renderer, 40, 40, 60, 255);
+        SDL_RenderFillRect(renderer, &bgRect);
+
+        // Player (depth: 10)
+        SDL_Rect playerRect = {100, 100, 64, 64};
+        SDL_SetRenderDrawColor(renderer, 100, 200, 255, 255);
+        SDL_RenderFillRect(renderer, &playerRect);
+        SDL_RenderDrawRect(renderer, &playerRect);
+
+        // UIContainer (depth: 20)
+        SDL_Rect uiRect = {0, 0, 800, 50};
+        SDL_SetRenderDrawColor(renderer, 255, 200, 100, 255);
+        SDL_RenderFillRect(renderer, &uiRect);
+        SDL_RenderDrawRect(renderer, &uiRect);
+
+        // HealthBar (child of UIContainer)
+        SDL_Rect healthBarRect = {600, 10, 150, 30};
+        SDL_SetRenderDrawColor(renderer, 255, 100, 100, 255);
+        SDL_RenderFillRect(renderer, &healthBarRect);
+        SDL_RenderDrawRect(renderer, &healthBarRect);
+
         // 渲染
         SDL_RenderPresent(renderer);
 

@@ -164,6 +164,26 @@ int main(int argc, char *argv[])
         SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
         SDL_RenderClear(renderer);
 
+        // 绘制不同 depth 的对象（按 depth 顺序绘制）
+        // Background (depth: 0)
+        SDL_Rect bgRect = {0, 0, 800, 600};
+        SDL_SetRenderDrawColor(renderer, 50, 50, 70, 255);
+        SDL_RenderFillRect(renderer, &bgRect);
+
+        // Player (depth: 10)
+        SDL_Rect playerRect = {100, 100, 100, 100};
+        SDL_SetRenderDrawColor(renderer, 100, 200, 255, 255);
+        SDL_RenderFillRect(renderer, &playerRect);
+        SDL_RenderDrawRect(renderer, &playerRect);
+
+        // UI (depth: 20)
+        SDL_Rect uiRect = {50, 50, 700, 50};
+        SDL_SetRenderDrawColor(renderer, 255, 200, 100, 255);
+        SDL_RenderFillRect(renderer, &uiRect);
+        SDL_RenderDrawRect(renderer, &uiRect);
+
+        // Hidden object (depth: 15) - 不绘制（visible = 0）
+
         // 渲染
         SDL_RenderPresent(renderer);
 

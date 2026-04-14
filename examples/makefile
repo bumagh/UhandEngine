@@ -13,8 +13,10 @@ ENGINE_SOURCES = ../src/engine/Scene.c \
                  ../src/engine/algorithm.c \
                  ../src/engine/transform.c \
                  ../src/engine/component.c \
-                 ../src/engine/list.c \
-                 ../src/engine/UI/TextComponent.c
+                 ../src/engine/list.c
+
+# TextComponent 单独编译，只有需要的示例链接
+TEXTCOMPONENT_SOURCES = ../src/engine/UI/TextComponent.c
 
 ENGINE_OBJECTS=$(ENGINE_SOURCES:.c=.o)
 
@@ -33,8 +35,8 @@ all: $(EXAMPLES)
 sprite_example: sprite_example.c $(ENGINE_OBJECTS)
 	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
 
-text_example: text_example.c $(ENGINE_OBJECTS)
-	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -lSDL2_ttf -L$(SDL2_LIB_PATH)/SDL2_ttf_2.20.2 -mconsole
+text_example: text_example.c $(ENGINE_OBJECTS) $(TEXTCOMPONENT_SOURCES:.c=.o)
+	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) $(TEXTCOMPONENT_SOURCES:.c=.o) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -lSDL2_ttf -L$(SDL2_LIB_PATH)/SDL2_ttf_2.20.2 -mconsole
 
 container_example: container_example.c $(ENGINE_OBJECTS)
 	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
@@ -45,8 +47,8 @@ properties_example: properties_example.c $(ENGINE_OBJECTS)
 scene_example: scene_example.c $(ENGINE_OBJECTS)
 	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
 
-render_example: render_example.c
-	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -lSDL2_ttf -L$(SDL2_LIB_PATH)/SDL2_ttf_2.20.2 -mconsole
+render_example: render_example.c $(TEXTCOMPONENT_SOURCES:.c=.o)
+	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(TEXTCOMPONENT_SOURCES:.c=.o) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -lSDL2_ttf -L$(SDL2_LIB_PATH)/SDL2_ttf_2.20.2 -mconsole
 
 clean:
 	del /Q $(EXAMPLES) 2>nul || true

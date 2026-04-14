@@ -122,6 +122,15 @@ int main(int argc, char *argv[])
         SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
         SDL_RenderClear(renderer);
 
+        // 绘制 sprite（用矩形表示）
+        SDL_Rect spriteRect = {100, 200, 64, 64};
+        SDL_SetRenderDrawColor(renderer, 100, 200, 255, 255);
+        SDL_RenderFillRect(renderer, &spriteRect);
+
+        // 绘制边框
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer, &spriteRect);
+
         // 渲染
         SDL_RenderPresent(renderer);
 
