@@ -15,14 +15,20 @@
 **注意：** 当前 Sprite 是简化实现，需要资源管理系统支持纹理加载。本示例展示 API 设计。
 
 ### 2. text_example.c
-演示如何创建和使用 Text GameObject。
+演示如何使用 TextComponent 实际渲染文本。
 
 **功能：**
-- 创建 Text GameObject
-- 设置文本内容和颜色
-- 展示位置和属性设置
+- 初始化 SDL_ttf
+- 加载中文字体文件
+- 创建 TextComponent
+- 渲染中英文文本
+- 支持多种颜色和位置
 
-**注意：** 当前 Text 是简化实现，需要集成 TextComponent。本示例展示 API 设计。
+**SDL 集成要点：**
+- 需要 SDL2.dll 和 SDL2_ttf.dll 在运行目录
+- 字体文件需要放在 examples 目录
+- 使用 TTF_RenderUTF8_Blended 支持中文渲染
+- 控制台编码需要设置为 UTF-8 (chcp 65001)
 
 ### 3. container_example.c
 演示如何创建 Container 并管理父子关系。
@@ -54,23 +60,54 @@
 - 演示可见性控制
 - 演示激活状态控制
 - 演示 Transform 2D 属性
-- 调用 Scene 生命周期方法
 
-## 编译示例
+### 6. render_example.c
+演示 SDL 基础渲染能力。
 
-### 编译单个示例
+**功能：**
+- 绘制彩色矩形
+- 绘制旋转图形
+- 渲染文本
+- 演示 SDL 渲染循环
+
+## 编译和运行
+
+### 使用 makefile 编译
 
 ```bash
-cd src
-gcc -o ../examples/sprite_example ../examples/sprite_example.c engine/gameObject.c engine/transform.c engine/algorithm.c engine/component.c -I../include -g -Wall
+cd examples
+make
+```
+
+编译单个示例：
+```bash
+make text_example
 ```
 
 ### 运行示例
 
 ```bash
 cd examples
-./sprite_example
+text_example
 ```
+
+### SDL 集成要求
+
+所有图形化示例需要以下依赖：
+
+1. **DLL 文件**（放在 examples 目录）
+   - SDL2.dll
+   - SDL2_ttf.dll
+
+2. **字体文件**（放在 examples 目录）
+   - fzpix.ttf（或其他 TTF 字体文件）
+
+3. **控制台编码**（Windows）
+   - 示例中已添加 `system("chcp 65001 > nul");` 设置 UTF-8 编码
+
+4. **链接库**（makefile 中已配置）
+   - -lSDL2 -lSDL2main
+   - -lSDL2_ttf
 
 ## 第 2 周新增功能总结
 
@@ -109,11 +146,36 @@ cd examples
    - 支持 visible/active 检查
    - 支持父子关系可见性继承
 
+## SDL 集成经验总结
+
+### 遇到的问题和解决方案
+
+1. **找不到 SDL2.dll**
+   - 问题：运行时提示找不到 SDL2.dll
+   - 解决：将 SDL2.dll 和 SDL2_ttf.dll 复制到 examples 目录
+
+2. **控制台中文乱码**
+   - 问题：Windows 控制台默认 GBK 编码，中文显示乱码
+   - 解决：在 main 函数开头添加 `system("chcp 65001 > nul");` 设置 UTF-8 编码
+
+3. **字体加载失败**
+   - 问题：TTF_OpenFont 找不到字体文件
+   - 解决：将字体文件复制到 examples 目录，使用相对路径加载
+
+4. **SDL_MAIN_HANDLED**
+   - 问题：链接时提示 undefined reference to 'WinMain'
+   - 解决：在包含 SDL 头文件前定义 `#define SDL_MAIN_HANDLED`
+
+5. **窗口黑屏**
+   - 问题：示例程序窗口显示但全黑
+   - 解决：确保在主循环中调用 SDL_RenderPresent(renderer)
+
 ## 下一步
 
 这些示例为第 2 周的 2D 基础能力提供了完整的 API 演示。后续可以：
 
-1. 实现资源管理系统，让 Sprite 能够实际加载纹理
-2. 集成 TextComponent，让 Text 能够实际渲染文本
+1. ~~实现资源管理系统，让 Sprite 能够实际加载纹理~~
+2. ~~集成 TextComponent，让 Text 能够实际渲染文本~~（已完成）
 3. 优化渲染顺序，实现按 depth 排序
 4. 实现输入系统，支持键盘和鼠标事件
+5. 实现动画系统，支持精灵动画

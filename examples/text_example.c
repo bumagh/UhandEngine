@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     SDL_Color color1 = {255, 255, 255, 255}; // 白色
     if (textComp1 && font)
     {
-        textComp1->init(textComp1, renderer, font, "UhandEngine Text Demo", color1);
+        textComp1->init(textComp1, renderer, font, "UhandEngine 文本渲染演示", color1);
         textComp1->dstRect.x = 50;
         textComp1->dstRect.y = 50;
         printf("Created TextComponent: %s\n", textComp1->base.name);
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     SDL_Color color2 = {255, 100, 100, 255}; // 红色
     if (textComp2 && font)
     {
-        textComp2->init(textComp2, renderer, font, "Press Q to quit", color2);
+        textComp2->init(textComp2, renderer, font, "按 Q 键退出", color2);
         textComp2->dstRect.x = 50;
         textComp2->dstRect.y = 550;
         printf("Created TextComponent: %s\n", textComp2->base.name);
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
     SDL_Color color3 = {100, 255, 255, 255}; // 青色
     if (textComp3 && font)
     {
-        textComp3->init(textComp3, renderer, font, "Hello World!", color3);
+        textComp3->init(textComp3, renderer, font, "你好，世界！", color3);
         textComp3->dstRect.x = 250;
         textComp3->dstRect.y = 250;
         printf("Created TextComponent: %s\n", textComp3->base.name);
