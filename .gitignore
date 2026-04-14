@@ -49,3 +49,5 @@ dkms.conf
 /engine-ref
 # Environment variables (contains API keys)
 .env
+web/UhandEngine/index.js
+web/UhandEngine/index.wasm
