@@ -2,35 +2,39 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "gameObject.h"
 #include "gameObjectList.h"
-#include "component.h"
+#include "uiComponent.h"
+#include "RenderQueue.h"
 #include <SDL2/SDL.h>
 
+// Scene 结构体
 typedef struct Scene
 {
-    GameObjectList *gameObjectList; // 场景中的 GameObject 链表容器
-    Component *uiComponents;       // 场景中的 UI 组件链表（临时用于 MVP）
+    GameObjectList *gameObjectList; // GameObject 列表
+    UIComponent *uiComponents;     // UI 组件链表
+    RenderQueue *renderQueue;      // 渲染队列
 } Scene;
 
-// Scene 创建和销毁
+// 函数声明
 Scene *Scene_Create();
 void Scene_Destroy(Scene *scene);
 
 // GameObject 管理
-void Scene_AddGameObject(Scene *scene, GameObject *go);
-void Scene_RemoveGameObject(Scene *scene, GameObject *obj);
+void Scene_AddGameObject(Scene *scene, GameObject *gameObject);
+void Scene_RemoveGameObject(Scene *scene, GameObject *gameObject);
 
-// UIComponent 管理（临时 MVP 支持）
-void Scene_AddUIComponent(Scene *scene, Component *uiComponent);
+// UIComponent 管理
+void Scene_AddUIComponent(Scene *scene, UIComponent *uiComponent);
+void Scene_RemoveUIComponent(Scene *scene, UIComponent *uiComponent);
 
-// Scene 生命周期方法
+// 生命周期方法
 void Scene_Awake(Scene *scene);
 void Scene_Start(Scene *scene);
 void Scene_Update(Scene *scene);
-void Scene_UpdateUI(Scene *scene);
-void Scene_RenderGameObjects(Scene *scene, SDL_Renderer *renderer);
-void Scene_RenderUI(Scene *scene, SDL_Renderer *renderer);
-void Scene_DestroyAll(Scene *scene);
 
-#endif
+// 渲染相关
+void Scene_RenderUI(Scene *scene, SDL_Renderer *renderer);
+void Scene_RenderGameObjects(Scene *scene, SDL_Renderer *renderer);
+void Scene_Render(Scene *scene, SDL_Renderer *renderer, void *context);
+
+#endif // SCENE_H

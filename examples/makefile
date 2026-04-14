@@ -13,7 +13,8 @@ ENGINE_SOURCES = ../src/engine/Scene.c \
                  ../src/engine/algorithm.c \
                  ../src/engine/transform.c \
                  ../src/engine/component.c \
-                 ../src/engine/list.c
+                 ../src/engine/list.c \
+                 ../src/engine/RenderQueue.c
 
 # TextComponent 单独编译，只有需要的示例链接
 TEXTCOMPONENT_SOURCES = ../src/engine/UI/TextComponent.c
@@ -53,8 +54,8 @@ render_example: render_example.c $(TEXTCOMPONENT_SOURCES:.c=.o)
 asset_example: asset_example.c ../src/engine/AssetManager.o
 	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< ../src/engine/AssetManager.o -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -lSDL2_image -L$(SDL2_LIB_PATH)/SDL2_image_2.6.3 -lSDL2_mixer -L$(SDL2_LIB_PATH)/SDL2_mixer_2.6.3 -lSDL2_ttf -L$(SDL2_LIB_PATH)/SDL2_ttf_2.20.2 -mconsole
 
-renderqueue_example: renderqueue_example.c $(ENGINE_OBJECTS) ../src/engine/RenderQueue.o
-	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) ../src/engine/RenderQueue.o -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
+renderqueue_example: renderqueue_example.c $(ENGINE_OBJECTS)
+	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
 
 clean:
 	del /Q $(EXAMPLES) 2>nul || true

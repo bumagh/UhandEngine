@@ -24,6 +24,15 @@ Scene *Scene_Create()
 
     scene->uiComponents = NULL;
 
+    scene->renderQueue = RenderQueue_Create();
+    if (scene->renderQueue == NULL)
+    {
+        printf("Failed to create RenderQueue for Scene\n");
+        free(scene->gameObjectList);
+        free(scene);
+        return NULL;
+    }
+
     return scene;
 }
 
@@ -40,17 +49,23 @@ void Scene_Destroy(Scene *scene)
     }
 
     // 释放 UI 组件
-    Component *current = scene->uiComponents;
+    UIComponent *current = scene->uiComponents;
     while (current != NULL)
     {
-        Component *next = current->next;
-        if (current->free)
+        UIComponent *next = (UIComponent *)current->base.next;
+        if (current->base.free)
         {
-            current->free(current);
+            current->base.free((Component *)current);
         }
         current = next;
     }
     scene->uiComponents = NULL;
+
+    if (scene->renderQueue)
+    {
+        RenderQueue_Destroy(scene->renderQueue);
+        scene->renderQueue = NULL;
+    }
 
     free(scene);
 }
@@ -62,6 +77,12 @@ void Scene_AddGameObject(Scene *scene, GameObject *go)
         return;
 
     GameObjectList_Add(scene->gameObjectList, go);
+
+    // 同时添加到渲染队列
+    if (scene->renderQueue)
+    {
+        RenderQueue_Add(scene->renderQueue, go);
+    }
 }
 
 void Scene_RemoveGameObject(Scene *scene, GameObject *obj)
@@ -73,13 +94,31 @@ void Scene_RemoveGameObject(Scene *scene, GameObject *obj)
 }
 
 // UIComponent 管理（临时 MVP 支持）
-void Scene_AddUIComponent(Scene *scene, Component *uiComponent)
+void Scene_AddUIComponent(Scene *scene, UIComponent *uiComponent)
 {
     if (scene == NULL || uiComponent == NULL)
         return;
 
-    uiComponent->next = scene->uiComponents;
+    uiComponent->base.next = (Component *)scene->uiComponents;
     scene->uiComponents = uiComponent;
+}
+
+void Scene_RemoveUIComponent(Scene *scene, UIComponent *uiComponent)
+{
+    if (scene == NULL || uiComponent == NULL)
+        return;
+
+    UIComponent **current = &scene->uiComponents;
+    while (*current)
+    {
+        if (*current == uiComponent)
+        {
+            *current = (UIComponent *)uiComponent->base.next;
+            uiComponent->base.next = NULL;
+            return;
+        }
+        current = (UIComponent **)&(*current)->base.next;
+    }
 }
 
 // Scene 生命周期方法
@@ -112,14 +151,14 @@ void Scene_UpdateUI(Scene *scene)
     if (scene == NULL)
         return;
 
-    Component *current = scene->uiComponents;
+    UIComponent *current = scene->uiComponents;
     while (current != NULL)
     {
-        if (current->update)
+        if (current->base.update)
         {
-            current->update(current);
+            current->base.update((Component *)current);
         }
-        current = current->next;
+        current = (UIComponent *)current->base.next;
     }
 }
 
@@ -128,14 +167,14 @@ void Scene_RenderUI(Scene *scene, SDL_Renderer *renderer)
     if (scene == NULL || renderer == NULL)
         return;
 
-    Component *current = scene->uiComponents;
+    UIComponent *current = scene->uiComponents;
     while (current != NULL)
     {
-        if (current->draw)
+        if (current->base.draw)
         {
-            current->draw(current, renderer);
+            current->base.draw((Component *)current, renderer);
         }
-        current = current->next;
+        current = (UIComponent *)current->base.next;
     }
 }
 
@@ -178,6 +217,22 @@ void Scene_RenderGameObjects(Scene *scene, SDL_Renderer *renderer)
             }
         }
         current = current->next;
+    }
+}
+
+// 使用 RenderQueue 渲染 Scene（按 depth 排序）
+void Scene_Render(Scene *scene, SDL_Renderer *renderer, void *context)
+{
+    if (scene == NULL || renderer == NULL)
+        return;
+
+    // 排序渲染队列
+    if (scene->renderQueue)
+    {
+        RenderQueue_Sort(scene->renderQueue);
+
+        // 渲染队列中的所有对象
+        RenderQueue_Render(scene->renderQueue, renderer, context);
     }
 }
 
