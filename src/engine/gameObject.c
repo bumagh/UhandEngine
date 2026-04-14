@@ -30,7 +30,7 @@ GameObject *createGameObject(const char *name)
     go->free = freeGameObject;
     go->getComponent = getComponent;
     go->render = renderGameObject;
-    Component *comp = (Component *)createTransform(0, 0, 0);
+    Component *comp = (Component *)createTransform(0, 0);
     addComponent(go, comp);
     go->transform = (Transform *)comp;
     return go;

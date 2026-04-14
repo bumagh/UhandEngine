@@ -49,8 +49,6 @@ void renderGameObject(struct GameObject *go, SDL_Renderer *renderer, void *conte
 // Transform 组件的 update 函数
 void updateTransform(Component *comp);
 
-// 创建 Transform 组件
-Transform *createTransform(float x, float y, float z);
 void freeGameObject(GameObject *go);
 int getComponentCount(GameObject *go);
 void printAllComponent(GameObject *go); // 默认生命周期函数
