@@ -3,8 +3,10 @@
 
 #ifdef pc_build
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #else
 #include "SDL.h"
+#include "SDL_ttf.h"
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,10 +15,20 @@
 #include "component.h"
 #include "transform.h"
 
+// GameObject 类型枚举
+typedef enum
+{
+    GAMEOBJECT_TYPE_BASE,      // 基础 GameObject
+    GAMEOBJECT_TYPE_SPRITE,    // Sprite 图像对象
+    GAMEOBJECT_TYPE_TEXT,      // Text 文本对象
+    GAMEOBJECT_TYPE_CONTAINER  // Container 容器对象
+} GameObjectType;
+
 // 定义GameObject结构体
 typedef struct GameObject
 {
     // 基础属性
+    GameObjectType type;  // GameObject 类型
     const char *name;
     const char *id;
 
@@ -50,7 +62,13 @@ typedef struct GameObject
 
 // 创建 GameObject
 GameObject *createGameObject(const char *name);
+GameObject *createGameObjectWithType(const char *name, GameObjectType type);
 void newGameObject(struct GameObject **self);
+
+// 创建特定类型的 GameObject 辅助函数
+GameObject *createSprite(const char *name, const char *texturePath, float x, float y);
+GameObject *createText(const char *name, const char *text, TTF_Font *font, SDL_Color color, float x, float y);
+GameObject *createContainer(const char *name);
 
 // 向 GameObject 添加组件
 void addComponent(struct GameObject *go, Component *comp); // TODO:升级2级指针

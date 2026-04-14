@@ -5,7 +5,13 @@
 // 创建GameObject
 GameObject *createGameObject(const char *name)
 {
+    return createGameObjectWithType(name, GAMEOBJECT_TYPE_BASE);
+}
+
+GameObject *createGameObjectWithType(const char *name, GameObjectType type)
+{
     GameObject *go = (GameObject *)malloc(sizeof(GameObject));
+    go->type = type;
     go->name = strdup(name);
     // 分配并生成 UUID
     char *uuid = malloc(37); // UUID 的长度为 36 个字符加上一个空终止符
@@ -309,5 +315,38 @@ void setDepth(struct GameObject *go, int depth)
     {
         go->depth = depth;
     }
+}
+
+// 创建特定类型的 GameObject 辅助函数
+GameObject *createSprite(const char *name, const char *texturePath, float x, float y)
+{
+    // TODO: 需要先建立资源管理系统
+    // 当前暂时返回基础 GameObject，后续添加 SpriteComponent
+    GameObject *go = createGameObjectWithType(name, GAMEOBJECT_TYPE_SPRITE);
+    if (go && go->transform)
+    {
+        go->transform->setPosition(go->transform, x, y);
+    }
+    return go;
+}
+
+GameObject *createText(const char *name, const char *text, TTF_Font *font, SDL_Color color, float x, float y)
+{
+    // TODO: 需要集成 TextComponent
+    // 当前暂时返回基础 GameObject，后续添加 TextComponent
+    GameObject *go = createGameObjectWithType(name, GAMEOBJECT_TYPE_TEXT);
+    if (go && go->transform)
+    {
+        go->transform->setPosition(go->transform, x, y);
+    }
+    return go;
+}
+
+GameObject *createContainer(const char *name)
+{
+    GameObject *go = createGameObjectWithType(name, GAMEOBJECT_TYPE_CONTAINER);
+    // Container 主要是利用 parent/children 关系
+    // 不需要额外的组件
+    return go;
 }
 
