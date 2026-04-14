@@ -60,7 +60,11 @@ int main(int argc, char *argv[])
     if (!font)
     {
         printf("Failed to load font: %s\n", TTF_GetError());
-        printf("Using default system font...\n");
+        printf("Will render rectangles instead of text\n");
+    }
+    else
+    {
+        printf("Font loaded successfully\n");
     }
 
     printf("=== Text Example ===\n\n");
@@ -131,18 +135,36 @@ int main(int argc, char *argv[])
         SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
         SDL_RenderClear(renderer);
 
-        // 绘制 TextComponent
-        if (textComp1 && textComp1->base.draw)
+        // 如果字体加载成功，绘制 TextComponent
+        if (font)
         {
-            textComp1->base.draw((Component *)textComp1, renderer);
+            if (textComp1 && textComp1->base.draw)
+            {
+                textComp1->base.draw((Component *)textComp1, renderer);
+            }
+            if (textComp2 && textComp2->base.draw)
+            {
+                textComp2->base.draw((Component *)textComp2, renderer);
+            }
+            if (textComp3 && textComp3->base.draw)
+            {
+                textComp3->base.draw((Component *)textComp3, renderer);
+            }
         }
-        if (textComp2 && textComp2->base.draw)
+        else
         {
-            textComp2->base.draw((Component *)textComp2, renderer);
-        }
-        if (textComp3 && textComp3->base.draw)
-        {
-            textComp3->base.draw((Component *)textComp3, renderer);
+            // 字体加载失败，绘制彩色矩形作为备用
+            SDL_Rect rect1 = {50, 50, 300, 50};
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderFillRect(renderer, &rect1);
+
+            SDL_Rect rect2 = {50, 550, 200, 40};
+            SDL_SetRenderDrawColor(renderer, 255, 100, 100, 255);
+            SDL_RenderFillRect(renderer, &rect2);
+
+            SDL_Rect rect3 = {250, 250, 200, 50};
+            SDL_SetRenderDrawColor(renderer, 100, 255, 255, 255);
+            SDL_RenderFillRect(renderer, &rect3);
         }
 
         // 渲染
