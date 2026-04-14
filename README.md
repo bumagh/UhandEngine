@@ -159,6 +159,9 @@ UhandEngine 的目标不是复制 PhaserJS，而是借鉴它的：
 - **`doc/web-release-checklist.md`**
   - 面向当前 Web-first MVP 的发布执行清单，覆盖构建、验证、AI 工具链、安全检查与静态部署前检查
 
+- **`doc/main-loop-refactor-checklist.md`**
+  - 主循环重构清单，记录从原型功能集合到 Scene-first 运行时骨架的完整重构步骤
+
 - **`doc/phaser-ai-alignment-roadmap.md`**
   - 面向 AI 版游戏引擎、并向 PhaserJS 对齐的路线图
 
@@ -204,9 +207,10 @@ UhandEngine 的目标不是复制 PhaserJS，而是借鉴它的：
 1. `doc/mvp-demo-steps.md`
 2. `doc/mvp-acceptance.md`
 3. `doc/web-release-checklist.md`
-4. `doc/ai-to-mvp-mapping.md`
-5. `doc/swe1.6-current-state-prompt.md`
-6. `doc/swe1.6-release-promotion-engine-first-prompt.md`
+4. `doc/main-loop-refactor-checklist.md`
+5. `doc/ai-to-mvp-mapping.md`
+6. `doc/swe1.6-current-state-prompt.md`
+7. `doc/swe1.6-release-promotion-engine-first-prompt.md`
 
 ## 构建说明
 

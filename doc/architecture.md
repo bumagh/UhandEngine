@@ -57,17 +57,20 @@ UhandEngine/
 2. `loadMedia()`
    - 加载字体等资产
 3. `gameInit()`
-   - 创建 `GameObjectList`
-   - 触发 `Awake` / `Start`
+   - 创建 `Scene`
+   - 调用 `Scene_Awake()` / `Scene_Start()`
+   - 添加 MVP UI 组件到 Scene
 4. `loop()`
    - 桌面端进入 while 循环
    - Web 端使用 `emscripten_set_main_loop`
 5. `tick()`
    - 处理事件
-   - 调用对象更新
+   - 调用 `Scene_Update()` 更新 GameObject
+   - 调用 `Scene_UpdateUI()` 更新 UI 组件
    - 清屏与提交渲染
 6. `quit()`
-   - 释放渲染器、窗口、字体与对象资源
+   - 调用 `Scene_Destroy()` 释放所有资源
+   - 释放渲染器、窗口、字体
 
 ## 3.2 数据流与控制流
 
@@ -76,13 +79,17 @@ main
  ├─ init
  ├─ loadMedia
  ├─ gameInit
- │   └─ createGameObjectList
+ │   └─ Scene_Create
+ │       ├─ Scene_Awake
+ │       ├─ Scene_Start
+ │       └─ Scene_AddUIComponent
  └─ loop
      └─ tick
-         ├─ GameObjectList_CallUpdate
+         ├─ Scene_Update
          ├─ SDL_PollEvent
-         ├─ handleButtons
+         ├─ Scene_UpdateUI
          ├─ SDL_RenderClear
+         ├─ Scene_RenderUI
          └─ SDL_RenderPresent
 ```
 
@@ -164,9 +171,18 @@ main
 
 职责：
 
-- 用于维护场景中的对象链表
+- 作为运行时主单元，管理场景中的 GameObject 和 UIComponent
+- 提供场景生命周期管理（Awake、Start、Update、Destroy）
+- 管理 GameObjectList 作为内部对象容器
+- 临时管理 UIComponent 链表（用于 MVP 支持）
 
-当前还处于早期阶段，功能尚未完全接入主循环。
+当前状态：
+
+- 已成为真正的运行入口
+- 已接入主循环的更新和渲染流程
+- 内部包含 GameObjectList 作为对象容器
+- 提供 Scene_AddGameObject / Scene_AddUIComponent 接口
+- 提供 Scene_Update / Scene_UpdateUI / Scene_RenderUI 接口
 
 ## 4.7 `EventManager`
 
@@ -207,11 +223,12 @@ main
 
 ## 6.2 Scene 尚未成为主组织单元
 
-当前更像是 `GameObjectList` 在承担世界容器职责，`Scene` 尚未真正成为：
+**（已解决）** 在第 1 周架构收敛中，Scene 已成为真正的运行时主单元：
 
-- 对象拥有者
-- 生命周期调度者
-- 资源作用域管理者
+- Scene 现在拥有 GameObjectList 作为内部对象容器
+- Scene 提供完整的生命周期管理（Awake、Start、Update、Destroy）
+- main.c 通过 Scene 初始化、更新和销毁所有资源
+- GameObjectList 的职责已并入 Scene
 
 ## 6.3 组件系统还未形成统一协议
 
@@ -378,7 +395,66 @@ UhandEngine/
 - `doc/editor-vision.md`
 - `doc/scene-pipeline.md`
 
-## 10. 下一阶段的架构原则
+## 10. 统一命名规范
+
+### 文件命名
+
+- C 源文件：小写，使用下划线分隔
+  - 例：`gameObject.c`、`uiComponent.c`、`scene.c`
+- 头文件：与源文件同名，`.h` 扩展名
+  - 例：`gameObject.h`、`uiComponent.h`、`scene.h`
+- 文档文件：小写，使用连字符分隔
+  - 例：`architecture.md`、`main-loop-refactor-checklist.md`
+
+### 函数命名
+
+- 模块函数：`模块名_动作名` 格式
+  - 例：`Scene_Create()`、`GameObjectList_Add()`、`Scene_UpdateUI()`
+- 通用函数：小写，使用下划线分隔
+  - 例：`createGameObjectList()`、`updateUIComponent()`
+
+### 类型命名
+
+- 结构体：大驼峰
+  - 例：`Scene`、`GameObject`、`Component`、`UIComponent`
+- 指针类型：`类型名 *变量名`
+  - 例：`Scene *scene`、`GameObject *go`
+
+### 变量命名
+
+- 局部变量：小写，使用下划线分隔
+  - 例：`current_time`、`delta_time`
+- 全局变量：小写，使用下划线分隔，可加 `g` 前缀
+  - 例：`gQuit`、`mainScene`
+- 成员变量：小写，使用下划线分隔
+  - 例：`gameObjectList`、`uiComponents`
+
+### 常量命名
+
+- 宏常量：全大写，使用下划线分隔
+  - 例：`SDL_DELAY`、`FRAMERATE`、`WINDOW_W`
+- 枚举常量：全大写，使用下划线分隔
+  - 例：`STATE_IDLE`、`STATE_RUNNING`
+
+### 模块边界命名
+
+- 每个模块的公开接口函数使用统一前缀
+  - Scene 模块：`Scene_` 前缀
+  - GameObject 模块：`GameObject_` 前缀
+  - GameObjectList 模块：`GameObjectList_` 前缀
+  - UIComponent 模块：`createUIComponent`、`updateUIComponent`、`renderUIComponent`
+
+### 生命周期方法命名
+
+- 统一使用以下生命周期方法名：
+  - `Awake()` - 对象创建时调用
+  - `Start()` - 对象第一次更新前调用
+  - `Update()` - 每帧调用
+  - `LateUpdate()` - 每帧 Update 之后调用
+  - `FixedUpdate()` - 固定时间步长调用
+  - `Destroy()` - 对象销毁时调用
+
+## 11. 下一阶段的架构原则
 
 - **Scene First**：让场景成为运行时第一组织单元
 - **Phaser-like API**：优先向 PhaserJS 的 2D API 心智靠拢
@@ -387,7 +463,7 @@ UhandEngine/
 - **Native + Web Dual Target**：继续保持 SDL2 与 Web 双端输出能力
 - **Small Core, Extensible Modules**：核心最小化，功能模块化
 
-## 11. 当前建议结论
+## 12. 当前建议结论
 
 从现状看，`UhandEngine` 最值得保留的不是已有功能的数量，而是已经具备了以下可演进骨架：
 
