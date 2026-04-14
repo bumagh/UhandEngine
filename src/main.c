@@ -172,6 +172,12 @@ void loadMedia()
 #else
     font = TTF_OpenFont("assets/fzpix.ttf", 16);
 #endif
+
+    if (font == NULL)
+    {
+        printf("Failed to load font! TTF Error: %s\n", TTF_GetError());
+        // 不设置 success = 0，让程序继续运行，只是没有文字渲染
+    }
 }
 void quit()
 {
