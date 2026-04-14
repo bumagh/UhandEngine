@@ -24,6 +24,7 @@
 #include "./engine/list.h"
 #include "./engine/uiComponent.h"
 #include "./engine/gameObjectList.h"
+#include "./engine/Scene.h"
 int w, h;
 #define SDL_DELAY 12
 #define FRAMERATE 30
@@ -38,7 +39,6 @@ float mouseY = 0;
 int fingerSupport = 1;
 int numFrames = 0;
 int startTime = 0;
-GameObjectList *goList;
 // 全局变量用于存储时间
 Uint32 lastTime = 0;
 Uint32 currentTime = 0;
@@ -50,14 +50,23 @@ SDL_Color textMenuColor = {0, 0, 0, 255};
 
 int gMusicCondition = 1;
 
-// MVP: UIComponent 全局变量
-UIComponent *titleText = NULL;
-UIComponent *startButton = NULL;
+// MVP: Scene 全局变量（替代原来的 UIComponent 全局变量）
+Scene *mainScene = NULL;
 
 // MVP: 点击回调函数
 void onStartButtonClick(void *data)
 {
     printf("Start button clicked!\n");
+}
+
+void onSettingsButtonClick(void *data)
+{
+    printf("Settings button clicked!\n");
+}
+
+void onQuitButtonClick(void *data)
+{
+    printf("Quit button clicked!\n");
 }
 int init()
 {
@@ -134,34 +143,23 @@ void tick()
     currentTime = SDL_GetTicks();
     // 计算 deltaTime（单位：秒）
     float deltaTime = (currentTime - lastTime) / 1000.0f;
-    GameObjectList_CallUpdate(goList);
+
+    // 通过 Scene 更新 GameObject
+    Scene_Update(mainScene);
+
     while (SDL_PollEvent(&e) != 0)
     {
         handleButtons();
     }
 
-    // MVP: 更新 UIComponent
-    if (titleText)
-    {
-        updateUIComponent((Component *)titleText);
-    }
-    if (startButton)
-    {
-        updateUIComponent((Component *)startButton);
-    }
+    // MVP: 通过 Scene 更新 UIComponent
+    Scene_UpdateUI(mainScene);
 
-    SDL_SetRenderDrawColor(renderer, 117, 117, 117, 255);
+    SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
     SDL_RenderClear(renderer);
 
-    // MVP: 渲染 UIComponent
-    if (titleText)
-    {
-        renderUIComponent((Component *)titleText, renderer);
-    }
-    if (startButton)
-    {
-        renderUIComponent((Component *)startButton, renderer);
-    }
+    // MVP: 通过 Scene 渲染 UIComponent
+    Scene_RenderUI(mainScene, renderer);
 
     SDL_RenderPresent(renderer);
     // 更新 lastTime，准备下一帧使用
@@ -177,6 +175,13 @@ void loadMedia()
 }
 void quit()
 {
+    // MVP: 通过 Scene 销毁所有资源
+    if (mainScene)
+    {
+        Scene_Destroy(mainScene);
+        mainScene = NULL;
+    }
+
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
@@ -188,26 +193,6 @@ void quit()
         font = NULL;
     }
 
-    // MVP: 释放 UIComponent
-    if (titleText)
-    {
-        free(titleText);
-        titleText = NULL;
-    }
-    if (startButton)
-    {
-        free(startButton);
-        startButton = NULL;
-    }
-
-    // 调用销毁函数并释放 GameObjectList 资源
-    if (goList)
-    {
-        GameObjectList_CallDestroy(goList);
-        free(goList);
-        goList = NULL;
-    }
-
     TTF_Quit();
     printf("quit ok\n");
 }
@@ -216,20 +201,53 @@ void gameInit()
 {
     SDL_GetWindowSize(window, &w, &h);
 
-    goList = createGameObjectList();
-    // 调用生命周期函数
-    GameObjectList_CallAwake(goList);
-    GameObjectList_CallStart(goList);
+    // MVP: 创建 Scene
+    mainScene = Scene_Create();
+    if (mainScene == NULL)
+    {
+        printf("Failed to create mainScene\n");
+        return;
+    }
 
-    // MVP: 创建标题文本
+    // 调用 Scene 生命周期函数
+    Scene_Awake(mainScene);
+    Scene_Start(mainScene);
+
+    // MVP: 创建标题文本 (基于 AI 输出)
     SDL_Color titleColor = {255, 255, 255, 255};
-    SDL_Color titleBgColor = {50, 50, 50, 255};
-    titleText = createUIComponent(w/2 - 100, h/2 - 100, 200, 50, titleBgColor, "UhandEngine MVP", font, titleColor, NULL);
+    SDL_Color titleBgColor = {32, 32, 32, 255};
+    UIComponent *titleText = createUIComponent(w/2 - 100, h/2 - 120, 200, 60, titleBgColor, "Main Menu", font, titleColor, NULL);
+    if (titleText)
+    {
+        Scene_AddUIComponent(mainScene, (Component *)titleText);
+    }
 
-    // MVP: 创建开始按钮
-    SDL_Color buttonColor = {100, 150, 255, 255};
-    SDL_Color buttonTextColor = {255, 255, 255, 255};
-    startButton = createUIComponent(w/2 - 75, h/2 + 20, 150, 40, buttonColor, "Start", font, buttonTextColor, onStartButtonClick);
+    // MVP: 创建开始按钮 (基于 AI 输出)
+    SDL_Color startButtonColor = {100, 150, 255, 255};
+    SDL_Color startButtonTextColor = {255, 255, 255, 255};
+    UIComponent *startButton = createUIComponent(w/2 - 75, h/2 - 30, 150, 40, startButtonColor, "Start Game", font, startButtonTextColor, onStartButtonClick);
+    if (startButton)
+    {
+        Scene_AddUIComponent(mainScene, (Component *)startButton);
+    }
+
+    // MVP: 创建设置按钮 (基于 AI 输出)
+    SDL_Color settingsButtonColor = {100, 100, 100, 255};
+    SDL_Color settingsButtonTextColor = {204, 204, 204, 255};
+    UIComponent *settingsButton = createUIComponent(w/2 - 75, h/2 + 30, 150, 40, settingsButtonColor, "Settings", font, settingsButtonTextColor, onSettingsButtonClick);
+    if (settingsButton)
+    {
+        Scene_AddUIComponent(mainScene, (Component *)settingsButton);
+    }
+
+    // MVP: 创建退出按钮 (基于 AI 输出)
+    SDL_Color quitButtonColor = {100, 100, 100, 255};
+    SDL_Color quitButtonTextColor = {204, 204, 204, 255};
+    UIComponent *quitButton = createUIComponent(w/2 - 75, h/2 + 90, 150, 40, quitButtonColor, "Quit", font, quitButtonTextColor, onQuitButtonClick);
+    if (quitButton)
+    {
+        Scene_AddUIComponent(mainScene, (Component *)quitButton);
+    }
 }
 void loop()
 {

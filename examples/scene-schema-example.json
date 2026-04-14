@@ -1,0 +1,205 @@
+{
+  "schemaVersion": "0.1",
+  "scene": {
+    "key": "MainMenu",
+    "name": "Main Menu",
+    "width": 800,
+    "height": 600,
+    "backgroundColor": "#202020"
+  },
+  "assets": [
+    {
+      "type": "font",
+      "key": "pixel-font",
+      "path": "assets/fzpix.ttf",
+      "size": 16
+    }
+  ],
+  "objects": [
+    {
+      "id": "title-text",
+      "name": "TitleText",
+      "type": "text",
+      "active": true,
+      "visible": true,
+      "layer": 10,
+      "tags": [
+        "ui",
+        "title"
+      ],
+      "transform": {
+        "x": 400,
+        "y": 150,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "originX": 0.5,
+        "originY": 0.5
+      },
+      "components": [
+        {
+          "type": "Text",
+          "props": {
+            "text": "Main Menu",
+            "fontKey": "pixel-font",
+            "color": "#ffffff",
+            "fontSize": 48
+          }
+        }
+      ],
+      "events": [],
+      "children": []
+    },
+    {
+      "id": "start-button",
+      "name": "StartButton",
+      "type": "button",
+      "active": true,
+      "visible": true,
+      "layer": 20,
+      "tags": [
+        "ui",
+        "button"
+      ],
+      "transform": {
+        "x": 400,
+        "y": 300,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "originX": 0.5,
+        "originY": 0.5
+      },
+      "components": [
+        {
+          "type": "Text",
+          "props": {
+            "text": "Start Game",
+            "fontKey": "pixel-font",
+            "color": "#ffffff",
+            "fontSize": 24
+          }
+        },
+        {
+          "type": "Clickable",
+          "props": {
+            "hitWidth": 200,
+            "hitHeight": 48,
+            "action": "start-game"
+          }
+        }
+      ],
+      "events": [
+        {
+          "event": "pointerdown",
+          "action": "start-game"
+        }
+      ],
+      "children": []
+    },
+    {
+      "id": "settings-button",
+      "name": "SettingsButton",
+      "type": "button",
+      "active": true,
+      "visible": true,
+      "layer": 20,
+      "tags": [
+        "ui",
+        "button"
+      ],
+      "transform": {
+        "x": 400,
+        "y": 380,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "originX": 0.5,
+        "originY": 0.5
+      },
+      "components": [
+        {
+          "type": "Text",
+          "props": {
+            "text": "Settings",
+            "fontKey": "pixel-font",
+            "color": "#cccccc",
+            "fontSize": 24
+          }
+        },
+        {
+          "type": "Clickable",
+          "props": {
+            "hitWidth": 200,
+            "hitHeight": 48,
+            "action": "open-settings"
+          }
+        }
+      ],
+      "events": [
+        {
+          "event": "pointerdown",
+          "action": "open-settings"
+        }
+      ],
+      "children": []
+    },
+    {
+      "id": "quit-button",
+      "name": "QuitButton",
+      "type": "button",
+      "active": true,
+      "visible": true,
+      "layer": 20,
+      "tags": [
+        "ui",
+        "button"
+      ],
+      "transform": {
+        "x": 400,
+        "y": 460,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "originX": 0.5,
+        "originY": 0.5
+      },
+      "components": [
+        {
+          "type": "Text",
+          "props": {
+            "text": "Quit",
+            "fontKey": "pixel-font",
+            "color": "#cccccc",
+            "fontSize": 24
+          }
+        },
+        {
+          "type": "Clickable",
+          "props": {
+            "hitWidth": 200,
+            "hitHeight": 48,
+            "action": "quit-game"
+          }
+        }
+      ],
+      "events": [
+        {
+          "event": "pointerdown",
+          "action": "quit-game"
+        }
+      ],
+      "children": []
+    }
+  ],
+  "systems": {
+    "input": {
+      "pointer": true,
+      "keyboard": true
+    }
+  },
+  "metadata": {
+    "author": "AI",
+    "note": "Main menu scene with title and buttons"
+  }
+}
