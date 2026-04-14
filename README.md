@@ -46,6 +46,13 @@ UhandEngine 是一个基于 `C + SDL2` 的轻量游戏引擎原型，当前面�
   - 已支持桌面构建
   - 已支持 `Emscripten` Web 输出
 
+- **当前 Web-first MVP 进展**
+  - Web 页面已经可以显示最小菜单场景
+  - 当前菜单已包含 `Main Menu`、`Start Game`、`Settings`、`Quit`
+  - 按钮点击已有最小响应
+  - 已接入 Claude API 的本地脚本调用能力
+  - 已有 Scene Schema 示例与 AI 输出到 MVP 的映射说明
+
 ## 当前核心目录
 
 ```text
@@ -59,14 +66,24 @@ UhandEngine/
 │  ├─ runtime-api.md
 │  ├─ ai-agent-workflow.md
 │  ├─ one-week-mvp-plan.md
+│  ├─ ai-to-mvp-mapping.md
+│  ├─ mvp-demo-steps.md
+│  ├─ mvp-acceptance.md
 │  ├─ phaser-ai-alignment-roadmap.md
 │  ├─ monthly-update-plan.md
-│  └─ swe1.6-prompt-and-skills.md
+│  ├─ swe1.6-prompt-and-skills.md
+│  ├─ swe1.6-current-state-prompt.md
+│  └─ swe1.6-release-promotion-engine-first-prompt.md
 ├─ src/
 │  ├─ main.c
 │  ├─ makefile
 │  ├─ assets/
 │  └─ engine/
+├─ scripts/
+│  ├─ ai-client.py
+│  └─ README.md
+├─ examples/
+│  └─ scene-schema-example.json
 ├─ test/
 ├─ web/
 ├─ include/
@@ -130,6 +147,18 @@ UhandEngine 的目标不是复制 PhaserJS，而是借鉴它的：
 - **`doc/one-week-mvp-plan.md`**
   - 定义一周内交付 Web-first + AI API 接入 + SWE1.6 Prompt 可用的 MVP 计划
 
+- **`doc/ai-to-mvp-mapping.md`**
+  - 说明 AI 生成的 Scene Schema 如何映射到当前 MVP 代码实现
+
+- **`doc/mvp-demo-steps.md`**
+  - 说明如何演示当前 Web-first MVP
+
+- **`doc/mvp-acceptance.md`**
+  - 定义当前 MVP 的最小验收标准
+
+- **`doc/web-release-checklist.md`**
+  - 面向当前 Web-first MVP 的发布执行清单，覆盖构建、验证、AI 工具链、安全检查与静态部署前检查
+
 - **`doc/phaser-ai-alignment-roadmap.md`**
   - 面向 AI 版游戏引擎、并向 PhaserJS 对齐的路线图
 
@@ -138,6 +167,46 @@ UhandEngine 的目标不是复制 PhaserJS，而是借鉴它的：
 
 - **`doc/swe1.6-prompt-and-skills.md`**
   - 面向 AI 编程代理的提示词、任务模板与技能定义
+
+- **`doc/swe1.6-current-state-prompt.md`**
+  - 面向当前 Day 5 之后仓库状态的 SWE1.6 续开发提示词
+
+- **`doc/swe1.6-release-promotion-engine-first-prompt.md`**
+  - 面向发布级推进目标的 SWE1.6 多步骤提示词，重点覆盖 Scene-first 骨架、多个示例、Web 发布与推广收口
+
+## 当前 MVP 交付说明
+
+当前 MVP 已经完成以下最小交付：
+
+- **Web 可运行演示**
+  - 浏览器中可打开 Web 版本并看到菜单场景
+
+- **最小显示与交互闭环**
+  - 已有标题文本与多个按钮
+  - 按钮点击已有最小响应
+
+- **AI API 最小接入**
+  - 已有本地脚本通过 Claude API 生成 Scene Schema
+
+- **AI 输出参与演示链路**
+  - 已保存示例 JSON
+  - 已有 AI 输出到当前 MVP 的映射说明
+
+当前 MVP 仍然是一个受控范围内的最小版本，不包含：
+
+- 完整 Scene Schema runtime loader
+- 完整编辑器
+- 完整 Physics / Animation / Tween
+- 完整 Scene-first 架构改造
+
+如果你想快速理解当前交付路径，建议按以下顺序阅读：
+
+1. `doc/mvp-demo-steps.md`
+2. `doc/mvp-acceptance.md`
+3. `doc/web-release-checklist.md`
+4. `doc/ai-to-mvp-mapping.md`
+5. `doc/swe1.6-current-state-prompt.md`
+6. `doc/swe1.6-release-promotion-engine-first-prompt.md`
 
 ## 构建说明
 
