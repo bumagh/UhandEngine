@@ -60,6 +60,9 @@ void sprite_example()
 
 int main(int argc, char *argv[])
 {
+    // 设置控制台编码为 UTF-8
+    system("chcp 65001 > nul");
+
     // 初始化 SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {

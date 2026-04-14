@@ -96,17 +96,10 @@ void scene_example()
             }
 
             printf("=== Scene Lifecycle ===\n");
-            printf("Calling Scene_Awake...\n");
-            Scene_Awake(scene);
-
-            printf("Calling Scene_Start...\n");
-            Scene_Start(scene);
-
-            printf("Calling Scene_Update...\n");
-            Scene_Update(scene);
+            printf("Note: Scene lifecycle methods are available but not called in this demo\n");
+            printf("(Scene_Awake, Scene_Start, Scene_Update)\n");
+            printf("Scene_RenderGameObjects 需要 SDL_Renderer 才能实际渲染\n");
             printf("\n");
-
-            printf("Note: Scene_RenderGameObjects 需要 SDL_Renderer 才能实际渲染\n");
         }
 
         // 清理
@@ -122,6 +115,9 @@ void scene_example()
 
 int main(int argc, char *argv[])
 {
+    // 设置控制台编码为 UTF-8
+    system("chcp 65001 > nul");
+
     // 初始化 SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
