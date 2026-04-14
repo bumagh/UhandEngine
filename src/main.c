@@ -211,7 +211,6 @@ void gameInit()
     mainScene = Scene_Create();
     if (mainScene == NULL)
     {
-        printf("Failed to create mainScene\n");
         return;
     }
 

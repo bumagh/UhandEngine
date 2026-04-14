@@ -6,7 +6,11 @@ UIComponent *createUIComponent(int x, int y, int w, int h, SDL_Color color, cons
     if (uiComp)
     {
         // 初始化基本的 Component 信息
+        uiComp->base.name = "UIComponent";
         uiComp->base.update = updateUIComponent;
+        uiComp->base.draw = renderUIComponent;
+        uiComp->base.free = NULL; // UIComponent 使用标准 free
+        uiComp->base.next = NULL;
         SDL_Color bgColor = {0, 0, 0, 200}; // 半透明黑色背景
         // 初始化 UI 组件属性
         uiComp->rect.x = x;
@@ -27,12 +31,19 @@ void updateUIComponent(Component *comp)
 {
     // 更新逻辑 (这里可以添加事件处理，如鼠标点击等)
     UIComponent *uiComp = (UIComponent *)comp;
-    // 检查是否有点击事件触发
+
+    // 简单的点击检测：只在鼠标按下时触发一次
+    static int mousePressed = 0;
     int mouseX, mouseY;
     Uint32 buttons = SDL_GetMouseState(&mouseX, &mouseY);
-    if ((buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) &&
-        mouseX > uiComp->rect.x && mouseX < (uiComp->rect.x + uiComp->rect.w) &&
-        mouseY > uiComp->rect.y && mouseY < (uiComp->rect.y + uiComp->rect.h))
+
+    int isHovering = mouseX > uiComp->rect.x && mouseX < (uiComp->rect.x + uiComp->rect.w) &&
+                     mouseY > uiComp->rect.y && mouseY < (uiComp->rect.y + uiComp->rect.h);
+
+    int isPressed = (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0;
+
+    // 检测鼠标按下瞬间
+    if (isPressed && !mousePressed && isHovering)
     {
         // 调用点击回调函数
         if (uiComp->onClick)
@@ -40,6 +51,8 @@ void updateUIComponent(Component *comp)
             uiComp->onClick(comp);
         }
     }
+
+    mousePressed = isPressed;
 }
 
 void renderUIComponent(Component *component, SDL_Renderer *renderer)
