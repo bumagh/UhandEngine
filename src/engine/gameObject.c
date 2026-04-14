@@ -20,6 +20,14 @@ GameObject *createGameObject(const char *name)
     }
     go->components = NULL; // 初始化为空链表
     go->next = NULL;
+
+    // 初始化 2D 基础属性
+    go->visible = 1;    // 默认可见
+    go->active = 1;     // 默认激活
+    go->depth = 0;      // 默认层级
+    go->parent = NULL;  // 默认无父对象
+    go->children = NULL; // 默认无子对象
+
     // 生命周期函数初始化
     go->Awake = NULL;
     go->Start = NULL;
@@ -220,3 +228,86 @@ void renderGameObject(GameObject *go, SDL_Renderer *renderer, void *context)
         current = current->next; // 遍历组件链表
     }
 }
+
+// 父子关系管理
+void addChild(struct GameObject *parent, struct GameObject *child)
+{
+    if (parent == NULL || child == NULL)
+    {
+        return;
+    }
+
+    // 如果子对象已经有父对象，先从原父对象移除
+    if (child->parent != NULL)
+    {
+        removeChild(child->parent, child);
+    }
+
+    // 设置新的父对象
+    child->parent = parent;
+
+    // 将子对象添加到父对象的子对象链表头部
+    child->next = parent->children;
+    parent->children = child;
+}
+
+void removeChild(struct GameObject *parent, struct GameObject *child)
+{
+    if (parent == NULL || child == NULL || child->parent != parent)
+    {
+        return;
+    }
+
+    // 从父对象的子对象链表中移除
+    GameObject *current = parent->children;
+    GameObject *prev = NULL;
+
+    while (current != NULL)
+    {
+        if (current == child)
+        {
+            if (prev == NULL)
+            {
+                // 移除的是头节点
+                parent->children = child->next;
+            }
+            else
+            {
+                prev->next = child->next;
+            }
+            break;
+        }
+        prev = current;
+        current = current->next;
+    }
+
+    // 清除子对象的父对象引用
+    child->parent = NULL;
+    child->next = NULL;
+}
+
+// 属性管理
+void setVisible(struct GameObject *go, int visible)
+{
+    if (go != NULL)
+    {
+        go->visible = visible;
+    }
+}
+
+void setActive(struct GameObject *go, int active)
+{
+    if (go != NULL)
+    {
+        go->active = active;
+    }
+}
+
+void setDepth(struct GameObject *go, int depth)
+{
+    if (go != NULL)
+    {
+        go->depth = depth;
+    }
+}
+

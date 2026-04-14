@@ -16,13 +16,26 @@
 // 定义GameObject结构体
 typedef struct GameObject
 {
-    // 其他 GameObject 的成员变量
+    // 基础属性
     const char *name;
     const char *id;
+
+    // 2D 基础属性
+    int visible;      // 可见性 (1=可见, 0=不可见)
+    int active;       // 激活状态 (1=激活, 0=未激活)
+    int depth;        // 渲染层级 (z-index)
+
+    // 父子关系
+    struct GameObject *parent;      // 父对象
+    struct GameObject *children;    // 子对象链表头
+
+    // 组件
     Component *components;   // 指向组件链表的头指针
-    Transform *transform;    // 指向组件链表的头指针
+    Transform *transform;    // Transform 组件
+
+    // 链表节点 (用于 Scene 的 GameObjectList)
     struct GameObject *next; // 链表中的下一个节点
-    // void *owner;//用于存储指向宿主对象的指针
+
     void (*free)(struct GameObject *go);
     // 生命周期函数指针
     void (*Awake)(struct GameObject *self);
@@ -48,6 +61,15 @@ void updateGameObject(struct GameObject *go);
 void renderGameObject(struct GameObject *go, SDL_Renderer *renderer, void *context);
 // Transform 组件的 update 函数
 void updateTransform(Component *comp);
+
+// 父子关系管理
+void addChild(struct GameObject *parent, struct GameObject *child);
+void removeChild(struct GameObject *parent, struct GameObject *child);
+
+// 属性管理
+void setVisible(struct GameObject *go, int visible);
+void setActive(struct GameObject *go, int active);
+void setDepth(struct GameObject *go, int depth);
 
 void freeGameObject(GameObject *go);
 int getComponentCount(GameObject *go);
