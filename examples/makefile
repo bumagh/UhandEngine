@@ -22,7 +22,7 @@ TEXTCOMPONENT_SOURCES = ../src/engine/UI/TextComponent.c
 ENGINE_OBJECTS=$(ENGINE_SOURCES:.c=.o)
 
 # 示例程序
-EXAMPLES = sprite_example text_example container_example properties_example scene_example render_example asset_example renderqueue_example
+EXAMPLES = sprite_example text_example container_example properties_example scene_example render_example asset_example renderqueue_example input_example
 
 .PHONY: all clean $(EXAMPLES)
 
@@ -56,6 +56,9 @@ asset_example: asset_example.c ../src/engine/AssetManager.o
 
 renderqueue_example: renderqueue_example.c $(ENGINE_OBJECTS)
 	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
+
+input_example: input_example.c ../src/engine/InputManager.o
+	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< ../src/engine/InputManager.o -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
 
 clean:
 	del /Q $(EXAMPLES) 2>nul || true
