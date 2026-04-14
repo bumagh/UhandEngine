@@ -22,7 +22,7 @@ TEXTCOMPONENT_SOURCES = ../src/engine/UI/TextComponent.c
 ENGINE_OBJECTS=$(ENGINE_SOURCES:.c=.o)
 
 # 示例程序
-EXAMPLES = sprite_example text_example container_example properties_example scene_example render_example asset_example renderqueue_example input_example camera_example animation_example tween_example integration_example
+EXAMPLES = sprite_example text_example container_example properties_example scene_example render_example asset_example renderqueue_example input_example camera_example animation_example tween_example integration_example game_example
 
 .PHONY: all clean $(EXAMPLES)
 
@@ -71,6 +71,9 @@ tween_example: tween_example.c ../src/engine/Tween.o
 
 integration_example: integration_example.c $(ENGINE_OBJECTS) ../src/engine/InputManager.o ../src/engine/Camera.o ../src/engine/Tween.o
 	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) ../src/engine/InputManager.o ../src/engine/Camera.o ../src/engine/Tween.o -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
+
+game_example: game_example.c $(ENGINE_OBJECTS) ../src/engine/InputManager.o
+	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) ../src/engine/InputManager.o -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
 
 clean:
 	del /Q $(EXAMPLES) 2>nul || true
