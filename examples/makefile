@@ -18,7 +18,7 @@ ENGINE_SOURCES = ../src/engine/Scene.c \
 ENGINE_OBJECTS=$(ENGINE_SOURCES:.c=.o)
 
 # 示例程序
-EXAMPLES = sprite_example text_example container_example properties_example scene_example
+EXAMPLES = sprite_example text_example container_example properties_example scene_example render_example
 
 .PHONY: all clean $(EXAMPLES)
 
@@ -43,6 +43,9 @@ properties_example: properties_example.c $(ENGINE_OBJECTS)
 
 scene_example: scene_example.c $(ENGINE_OBJECTS)
 	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
+
+render_example: render_example.c
+	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -lSDL2_ttf -L$(SDL2_LIB_PATH)/SDL2_ttf_2.20.2 -mconsole
 
 clean:
 	del /Q $(EXAMPLES) 2>nul || true
