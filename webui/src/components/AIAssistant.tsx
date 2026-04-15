@@ -23,11 +23,12 @@ function AIAssistant() {
   const [loading, setLoading] = useState(false)
   const [aiConfigured, setAiConfigured] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { currentFile, projectStructure, engineInfo } = useStore()
+  const { currentFile, projectStructure, engineInfo, loadEngineInfo } = useStore()
 
   useEffect(() => {
     checkAIStatus()
     loadAndApplyConfig()
+    loadEngineInfo()
   }, [])
 
   const checkAIStatus = async () => {
@@ -77,19 +78,23 @@ function AIAssistant() {
     setError(null)
 
     try {
-      const context: any = {}
-      if (currentFile) {
-        context.currentFile = currentFile
-      }
-      if (projectStructure) {
-        context.projectStructure = projectStructure
-      }
+      // Build system prompt with context
+      let systemPrompt = 'You are a helpful AI assistant for UhandEngine game engine.\n\n'
+      
       if (engineInfo) {
-        context.engineInfo = engineInfo
+        systemPrompt += `Engine Info:\n${JSON.stringify(engineInfo, null, 2)}\n\n`
+      }
+      
+      if (projectStructure) {
+        systemPrompt += `Project Structure:\n${JSON.stringify(projectStructure.slice(0, 5), null, 2)}...\n\n`
+      }
+      
+      if (currentFile) {
+        systemPrompt += `Current File: ${currentFile.path}\nContent:\n${currentFile.content.substring(0, 500)}...\n\n`
       }
 
       const messagesForAI = [
-        { role: 'system', content: 'You are a helpful AI assistant for UhandEngine game engine.' },
+        { role: 'system', content: systemPrompt },
         ...messages.map(m => ({ role: m.role, content: m.content })),
         { role: 'user', content: input }
       ]
