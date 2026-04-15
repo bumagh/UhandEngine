@@ -32,13 +32,17 @@ export const useStore = create<AppState>((set, get) => ({
   loadProjectStructure: async () => {
     set({ loading: true, error: null })
     try {
+      console.log('Loading project structure...')
       const response = await apiService.getProjectStructure()
+      console.log('Response:', response)
       if (response.success && response.data) {
         set({ projectStructure: response.data.structure, loading: false })
       } else {
+        console.error('Failed to load project structure:', response.error)
         set({ error: response.error || 'Failed to load project structure', loading: false })
       }
     } catch (error) {
+      console.error('Error loading project structure:', error)
       set({ error: error instanceof Error ? error.message : 'Unknown error', loading: false })
     }
   },
