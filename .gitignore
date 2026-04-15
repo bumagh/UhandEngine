@@ -53,3 +53,7 @@ web/UhandEngine/index.js
 web/UhandEngine/index.wasm
 web/UhandEngine/index.data
 web/UhandEngine/index.html
+
+# Node modules
+node_modules/
+package-lock.json
