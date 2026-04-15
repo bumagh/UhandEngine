@@ -17,8 +17,9 @@ export interface EngineInfo {
 
 export interface ApiResponse<T = any> {
   success: boolean
-  data?: T
   error?: string
+  // Data is directly on the response, not in a data property
+  [key: string]: any
 }
 
 class ApiService {

@@ -22,7 +22,7 @@ interface AppState {
   setError: (error: string | null) => void
 }
 
-export const useStore = create<AppState>((set, get) => ({
+export const useStore = create<AppState>((set) => ({
   projectStructure: null,
   loading: false,
   error: null,
@@ -35,8 +35,8 @@ export const useStore = create<AppState>((set, get) => ({
       console.log('Loading project structure...')
       const response = await apiService.getProjectStructure()
       console.log('Response:', response)
-      if (response.success && response.data) {
-        set({ projectStructure: response.data.structure, loading: false })
+      if (response.success && (response as any).structure) {
+        set({ projectStructure: (response as any).structure, loading: false })
       } else {
         console.error('Failed to load project structure:', response.error)
         set({ error: response.error || 'Failed to load project structure', loading: false })
@@ -51,8 +51,8 @@ export const useStore = create<AppState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const response = await apiService.getFileContent(path)
-      if (response.success && response.data) {
-        set({ currentFile: { path, content: response.data.content }, loading: false })
+      if (response.success && (response as any).content) {
+        set({ currentFile: { path, content: (response as any).content }, loading: false })
       } else {
         set({ error: response.error || 'Failed to load file content', loading: false })
       }
@@ -79,8 +79,8 @@ export const useStore = create<AppState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const response = await apiService.getEngineInfo()
-      if (response.success && response.data) {
-        set({ engineInfo: response.data.info, loading: false })
+      if (response.success && (response as any).info) {
+        set({ engineInfo: (response as any).info, loading: false })
       } else {
         set({ error: response.error || 'Failed to load engine info', loading: false })
       }
