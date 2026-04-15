@@ -4,7 +4,6 @@ class AIService {
   constructor() {
     this.provider = process.env.AI_PROVIDER || 'openai';
     this.openai = null;
-    this.claude = null;
     this.config = null; // Dynamic config from WebUI
     
     this.initialize();
@@ -19,9 +18,6 @@ class AIService {
       }
       this.openai = new OpenAI({ apiKey });
       console.log('OpenAI client initialized');
-    } else if (this.provider === 'anthropic') {
-      // Claude client initialization would go here
-      console.log('Claude client not yet implemented');
     }
   }
 
@@ -29,22 +25,23 @@ class AIService {
     this.config = config;
     
     // Reinitialize with new config
-    if (config.provider === 'openai' || config.apiKey) {
+    if (config.apiKey) {
       try {
+        // Use OpenAI client for both OpenAI and OpenAI-compatible APIs
         this.openai = new OpenAI({ 
           apiKey: config.apiKey,
           baseURL: config.baseUrl || 'https://api.openai.com/v1'
         });
-        console.log('OpenAI client initialized with dynamic config');
+        console.log('AI client initialized with dynamic config');
       } catch (error) {
-        console.error('Failed to initialize OpenAI with dynamic config:', error);
+        console.error('Failed to initialize AI client with dynamic config:', error);
       }
     }
   }
 
   async chat(messages, options = {}) {
     try {
-      if (this.provider === 'openai' && this.openai) {
+      if (this.openai) {
         return await this.chatWithOpenAI(messages, options);
       } else {
         throw new Error('AI provider not configured');

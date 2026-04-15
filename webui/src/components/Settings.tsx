@@ -3,7 +3,7 @@ import { Settings as SettingsIcon, Save, Key, Globe, Server } from 'lucide-react
 import { apiService } from '../services/api'
 
 interface AIConfig {
-  provider: 'openai' | 'anthropic' | 'custom'
+  provider: 'openai' | 'custom'
   apiKey: string
   model: string
   baseUrl: string
@@ -77,10 +77,9 @@ function Settings() {
     }
   }
 
-  const handleProviderChange = (provider: 'openai' | 'anthropic' | 'custom') => {
+  const handleProviderChange = (provider: 'openai' | 'custom') => {
     const defaults = {
       openai: { model: 'gpt-3.5-turbo', baseUrl: 'https://api.openai.com/v1' },
-      anthropic: { model: 'claude-3-opus-20240229', baseUrl: 'https://api.anthropic.com' },
       custom: { model: '', baseUrl: '' }
     }
     setConfig(prev => ({
@@ -123,17 +122,6 @@ function Settings() {
                 <div className="text-sm text-gray-400 mt-1">GPT models</div>
               </button>
               <button
-                onClick={() => handleProviderChange('anthropic')}
-                className={`flex-1 p-4 rounded-lg border-2 transition-colors ${
-                  config.provider === 'anthropic'
-                    ? 'border-primary-600 bg-primary-600/20'
-                    : 'border-gray-700 hover:border-gray-600'
-                }`}
-              >
-                <div className="font-medium">Anthropic</div>
-                <div className="text-sm text-gray-400 mt-1">Claude models</div>
-              </button>
-              <button
                 onClick={() => handleProviderChange('custom')}
                 className={`flex-1 p-4 rounded-lg border-2 transition-colors ${
                   config.provider === 'custom'
@@ -142,7 +130,7 @@ function Settings() {
                 }`}
               >
                 <div className="font-medium">Custom</div>
-                <div className="text-sm text-gray-400 mt-1">OpenAI-compatible</div>
+                <div className="text-sm text-gray-400 mt-1">OpenAI-compatible API</div>
               </button>
             </div>
           </div>
@@ -194,7 +182,7 @@ function Settings() {
               className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <p className="text-sm text-gray-400 mt-2">
-              The base URL for the API. Use this for custom endpoints or proxies.
+              The base URL for the API. For OpenAI-compatible APIs (like custom Claude endpoints), provide the full URL here.
             </p>
           </div>
 
