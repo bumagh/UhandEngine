@@ -4,6 +4,9 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
+require('dotenv').config();
+
+const AIService = require('./ai-service');
 
 const app = express();
 const PORT = 18081;
@@ -21,6 +24,9 @@ app.use((req, res, next) => {
 
 // Project root path
 const PROJECT_ROOT = path.resolve(__dirname, '../../');
+
+// Initialize AI Service
+const aiService = new AIService();
 
 // API Routes
 
@@ -161,6 +167,68 @@ app.get('/api/engine/info', (req, res) => {
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// AI Routes
+
+// Check AI configuration
+app.get('/api/ai/status', (req, res) => {
+  res.json({
+    success: true,
+    configured: aiService.isConfigured(),
+    provider: process.env.AI_PROVIDER || 'openai',
+  });
+});
+
+// AI Chat
+app.post('/api/ai/chat', async (req, res) => {
+  const { messages, options = {} } = req.body;
+  
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ success: false, error: 'Messages array is required' });
+  }
+
+  try {
+    const response = await aiService.chat(messages, options);
+    res.json({ success: true, data: response });
+  } catch (error) {
+    console.error('AI chat error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Generate Code
+app.post('/api/ai/generate-code', async (req, res) => {
+  const { prompt, context = {} } = req.body;
+  
+  if (!prompt) {
+    return res.status(400).json({ success: false, error: 'Prompt is required' });
+  }
+
+  try {
+    const code = await aiService.generateCode(prompt, context);
+    res.json({ success: true, code });
+  } catch (error) {
+    console.error('Code generation error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Analyze Code
+app.post('/api/ai/analyze', async (req, res) => {
+  const { code, context = {} } = req.body;
+  
+  if (!code) {
+    return res.status(400).json({ success: false, error: 'Code is required' });
+  }
+
+  try {
+    const analysis = await aiService.analyzeCode(code, context);
+    res.json({ success: true, analysis });
+  } catch (error) {
+    console.error('Code analysis error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // Start server

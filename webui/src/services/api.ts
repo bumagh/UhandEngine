@@ -75,6 +75,32 @@ class ApiService {
   async healthCheck(): Promise<ApiResponse<{ status: string; timestamp: string }>> {
     return this.request('/health')
   }
+
+  // AI API methods
+  async getAIStatus(): Promise<ApiResponse<{ configured: boolean; provider: string }>> {
+    return this.request('/ai/status')
+  }
+
+  async chatWithAI(messages: any[], options?: any): Promise<ApiResponse> {
+    return this.request('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ messages, options }),
+    })
+  }
+
+  async generateCode(prompt: string, context?: any): Promise<ApiResponse<{ code: string }>> {
+    return this.request('/ai/generate-code', {
+      method: 'POST',
+      body: JSON.stringify({ prompt, context }),
+    })
+  }
+
+  async analyzeCode(code: string, context?: any): Promise<ApiResponse<{ analysis: string }>> {
+    return this.request('/ai/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ code, context }),
+    })
+  }
 }
 
 export const apiService = new ApiService()
