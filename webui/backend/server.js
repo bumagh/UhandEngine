@@ -254,6 +254,8 @@ app.post('/api/ai/config', (req, res) => {
 app.post('/api/ai/config/test', async (req, res) => {
   const { provider, apiKey, model, baseUrl } = req.body;
   
+  console.log('Testing AI config:', { provider, hasApiKey: !!apiKey, model, baseUrl });
+  
   if (!apiKey) {
     return res.status(400).json({ success: false, error: 'API key is required' });
   }
@@ -263,11 +265,15 @@ app.post('/api/ai/config/test', async (req, res) => {
     const testService = new AIService();
     testService.setConfig({ provider, apiKey, model, baseUrl });
     
+    console.log('AI service configured, sending test message...');
+    
     // Test with a simple message
     const testResponse = await testService.chat([
       { role: 'system', content: 'You are a helpful assistant.' },
       { role: 'user', content: 'Say "Hello" in one word.' }
     ], { model, maxTokens: 10 });
+    
+    console.log('Test response:', testResponse);
     
     if (testResponse.content) {
       res.json({ success: true, message: 'Configuration test successful', response: testResponse.content });
@@ -276,6 +282,7 @@ app.post('/api/ai/config/test', async (req, res) => {
     }
   } catch (error) {
     console.error('Test config error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ success: false, error: error.message });
   }
 });

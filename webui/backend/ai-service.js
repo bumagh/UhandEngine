@@ -70,6 +70,15 @@ class AIService {
       return response; // Stream object
     }
 
+    // Validate response
+    if (!response.choices || response.choices.length === 0) {
+      throw new Error('No choices in response from OpenAI');
+    }
+
+    if (!response.choices[0].message || !response.choices[0].message.content) {
+      throw new Error('No message content in response from OpenAI');
+    }
+
     return {
       content: response.choices[0].message.content,
       usage: response.usage,
