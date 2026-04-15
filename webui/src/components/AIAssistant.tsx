@@ -78,19 +78,23 @@ function AIAssistant() {
     setError(null)
 
     try {
-      // Build system prompt with context
+      // Build system prompt with context (optimized to reduce size)
       let systemPrompt = 'You are a helpful AI assistant for UhandEngine game engine.\n\n'
       
       if (engineInfo) {
-        systemPrompt += `Engine Info:\n${JSON.stringify(engineInfo, null, 2)}\n\n`
+        systemPrompt += `Engine: ${engineInfo.name} v${engineInfo.version}\n`
+        systemPrompt += `Description: ${engineInfo.description}\n`
+        systemPrompt += `Systems: ${engineInfo.systems?.join(', ') || 'N/A'}\n\n`
       }
       
       if (projectStructure) {
-        systemPrompt += `Project Structure:\n${JSON.stringify(projectStructure.slice(0, 5), null, 2)}...\n\n`
+        const folders = projectStructure.filter(item => item.type === 'folder').slice(0, 10)
+        systemPrompt += `Project folders: ${folders.map(f => f.name).join(', ')}\n\n`
       }
       
       if (currentFile) {
-        systemPrompt += `Current File: ${currentFile.path}\nContent:\n${currentFile.content.substring(0, 500)}...\n\n`
+        systemPrompt += `Current file: ${currentFile.path}\n`
+        systemPrompt += `Content preview:\n${currentFile.content.substring(0, 300)}...\n\n`
       }
 
       const messagesForAI = [
