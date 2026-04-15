@@ -4,17 +4,56 @@
 
 UhandEngine WebUI 集成了 AI 助手功能，支持通过 OpenAI API 进行智能对话和代码生成。
 
-## 配置步骤
+## 配置方式
 
-### 1. 获取 OpenAI API 密钥
+### 方式一：通过 WebUI 配置（推荐）
 
-1. 访问 https://platform.openai.com/
-2. 注册或登录账号
-3. 进入 API Keys 页面
-4. 创建新的 API 密钥
-5. 复制密钥（格式：`sk-...`）
+**这是最简单的方式，无需编辑文件。**
 
-### 2. 配置后端环境变量
+1. 获取 OpenAI API 密钥
+   - 访问 https://platform.openai.com/
+   - 注册或登录账号
+   - 进入 API Keys 页面
+   - 创建新的 API 密钥
+   - 复制密钥（格式：`sk-...`）
+
+2. 启动 WebUI
+   ```bash
+   cd webui
+   npm run dev
+   ```
+   访问 http://localhost:13000
+
+3. 打开设置界面
+   - 点击侧边栏的设置图标（齿轮）
+   - 进入 AI Configuration 页面
+
+4. 配置 AI
+   - 选择 API Provider（OpenAI / Anthropic / Custom）
+   - 输入 API Key
+   - 选择或输入 Model（如 gpt-3.5-turbo, gpt-4）
+   - 输入 Base URL（默认为 https://api.openai.com/v1）
+
+5. 测试配置
+   - 点击 "Test Configuration" 按钮
+   - 如果成功，会显示 "Configuration test successful"
+
+6. 保存配置
+   - 点击 "Save Configuration" 按钮
+   - 配置会保存到浏览器本地存储
+
+7. 使用 AI
+   - 返回 AI Assistant 页面
+   - 开始与 AI 对话
+
+### 方式二：通过环境变量配置
+
+**适合服务器部署或需要持久化配置的场景。**
+
+1. 获取 OpenAI API 密钥
+   - 同上
+
+2. 配置后端环境变量
 
 在 `webui/backend/` 目录下创建 `.env` 文件：
 
@@ -38,14 +77,14 @@ cp .env.example .env
 
 然后编辑 `.env` 文件，填入你的 API 密钥。
 
-### 3. 安装依赖
+3. 安装依赖
 
 ```bash
 cd webui/backend
 npm install
 ```
 
-### 4. 重启后端服务器
+4. 重启后端服务器
 
 停止当前的后端服务器（Ctrl+C），然后重新启动：
 
@@ -59,7 +98,7 @@ OpenAI client initialized
 UhandEngine WebUI Backend running on port 18081
 ```
 
-### 5. 测试 AI 功能
+5. 测试 AI 功能
 
 1. 打开浏览器访问 http://localhost:13000
 2. 点击 AI Assistant 图标
