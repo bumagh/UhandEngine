@@ -30,7 +30,10 @@ class AIService {
         // Use OpenAI client for both OpenAI and OpenAI-compatible APIs
         this.openai = new OpenAI({ 
           apiKey: config.apiKey,
-          baseURL: config.baseUrl || 'https://api.openai.com/v1'
+          baseURL: config.baseUrl || 'https://api.openai.com/v1',
+          defaultHeaders: {
+            'anthropic-version': '2023-06-01'
+          }
         });
         console.log('AI client initialized with dynamic config');
       } catch (error) {
@@ -73,21 +76,39 @@ class AIService {
       return response; // Stream object
     }
 
-    // Validate response
-    if (!response.choices || response.choices.length === 0) {
-      console.error('Response has no choices:', response);
-      throw new Error('No choices in response from API');
+    // Try to extract content from different response formats
+    let content = null;
+    let usage = response.usage;
+    let model_name = response.model;
+
+    // OpenAI format
+    if (response.choices && response.choices.length > 0 && response.choices[0].message) {
+      content = response.choices[0].message.content;
+      console.log('Detected OpenAI format');
+    }
+    // Anthropic format
+    else if (response.content && Array.isArray(response.content)) {
+      const textBlock = response.content.find(block => block.type === 'text');
+      if (textBlock && textBlock.text) {
+        content = textBlock.text;
+        console.log('Detected Anthropic format');
+      }
+    }
+    // Direct content field
+    else if (response.content && typeof response.content === 'string') {
+      content = response.content;
+      console.log('Detected direct content format');
     }
 
-    if (!response.choices[0].message || !response.choices[0].message.content) {
-      console.error('Response has no message content:', response);
-      throw new Error('No message content in response from API');
+    if (!content) {
+      console.error('Response has no extractable content:', response);
+      throw new Error('No content in response from API. Response format not recognized.');
     }
 
     return {
-      content: response.choices[0].message.content,
-      usage: response.usage,
-      model: response.model,
+      content,
+      usage,
+      model: model_name,
     };
   }
 
