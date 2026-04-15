@@ -5,6 +5,7 @@ class AIService {
     this.provider = process.env.AI_PROVIDER || 'openai';
     this.openai = null;
     this.claude = null;
+    this.config = null; // Dynamic config from WebUI
     
     this.initialize();
   }
@@ -24,6 +25,23 @@ class AIService {
     }
   }
 
+  setConfig(config) {
+    this.config = config;
+    
+    // Reinitialize with new config
+    if (config.provider === 'openai' || config.apiKey) {
+      try {
+        this.openai = new OpenAI({ 
+          apiKey: config.apiKey,
+          baseURL: config.baseUrl || 'https://api.openai.com/v1'
+        });
+        console.log('OpenAI client initialized with dynamic config');
+      } catch (error) {
+        console.error('Failed to initialize OpenAI with dynamic config:', error);
+      }
+    }
+  }
+
   async chat(messages, options = {}) {
     try {
       if (this.provider === 'openai' && this.openai) {
@@ -38,7 +56,7 @@ class AIService {
   }
 
   async chatWithOpenAI(messages, options = {}) {
-    const model = options.model || process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
+    const model = options.model || (this.config?.model) || process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
     
     const response = await this.openai.chat.completions.create({
       model,

@@ -101,6 +101,20 @@ class ApiService {
       body: JSON.stringify({ code, context }),
     })
   }
+
+  async saveAIConfig(config: any): Promise<ApiResponse> {
+    return this.request('/ai/config', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    })
+  }
+
+  async testAIConfig(config: any): Promise<ApiResponse> {
+    return this.request('/ai/config/test', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    })
+  }
 }
 
 export const apiService = new ApiService()

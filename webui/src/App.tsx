@@ -2,10 +2,11 @@ import { useState } from 'react'
 import ProjectBrowser from './components/ProjectBrowser'
 import AIAssistant from './components/AIAssistant'
 import CodeEditor from './components/CodeEditor'
-import { Layout, Menu, Code } from 'lucide-react'
+import Settings from './components/Settings'
+import { Layout, Menu, Code, Settings as SettingsIcon } from 'lucide-react'
 
 function App() {
-  const [activePanel, setActivePanel] = useState<'project' | 'ai' | 'editor'>('project')
+  const [activePanel, setActivePanel] = useState<'project' | 'ai' | 'editor' | 'settings'>('project')
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
@@ -38,6 +39,15 @@ function App() {
         >
           <Code className="w-6 h-6" />
         </button>
+        <button
+          onClick={() => setActivePanel('settings')}
+          className={`p-3 rounded-lg transition-colors ${
+            activePanel === 'settings' ? 'bg-primary-600' : 'hover:bg-gray-700'
+          }`}
+          title="Settings"
+        >
+          <SettingsIcon className="w-6 h-6" />
+        </button>
       </div>
 
       {/* Main Content */}
@@ -45,6 +55,7 @@ function App() {
         {activePanel === 'project' && <ProjectBrowser />}
         {activePanel === 'ai' && <AIAssistant />}
         {activePanel === 'editor' && <CodeEditor />}
+        {activePanel === 'settings' && <Settings />}
       </div>
     </div>
   )

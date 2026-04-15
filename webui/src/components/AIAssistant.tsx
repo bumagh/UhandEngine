@@ -27,6 +27,7 @@ function AIAssistant() {
 
   useEffect(() => {
     checkAIStatus()
+    loadAndApplyConfig()
   }, [])
 
   const checkAIStatus = async () => {
@@ -35,12 +36,28 @@ function AIAssistant() {
       if (response.success && (response as any).configured !== undefined) {
         setAiConfigured((response as any).configured)
         if (!(response as any).configured) {
-          setError('AI not configured. Please set OPENAI_API_KEY in backend/.env')
+          setError('AI not configured. Please configure AI in Settings')
         }
       }
     } catch (err) {
       console.error('Failed to check AI status:', err)
       setError('Failed to connect to AI service')
+    }
+  }
+
+  const loadAndApplyConfig = async () => {
+    const saved = localStorage.getItem('ai-config')
+    if (saved) {
+      try {
+        const config = JSON.parse(saved)
+        if (config.apiKey) {
+          await apiService.saveAIConfig(config)
+          setAiConfigured(true)
+          setError(null)
+        }
+      } catch (e) {
+        console.error('Failed to load config:', e)
+      }
     }
   }
 

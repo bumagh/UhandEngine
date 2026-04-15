@@ -231,6 +231,55 @@ app.post('/api/ai/analyze', async (req, res) => {
   }
 });
 
+// Save AI Configuration
+app.post('/api/ai/config', (req, res) => {
+  const { provider, apiKey, model, baseUrl } = req.body;
+  
+  if (!apiKey) {
+    return res.status(400).json({ success: false, error: 'API key is required' });
+  }
+
+  try {
+    // Update AI service with new config
+    aiService.setConfig({ provider, apiKey, model, baseUrl });
+    
+    res.json({ success: true, message: 'Configuration saved' });
+  } catch (error) {
+    console.error('Save config error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test AI Configuration
+app.post('/api/ai/config/test', async (req, res) => {
+  const { provider, apiKey, model, baseUrl } = req.body;
+  
+  if (!apiKey) {
+    return res.status(400).json({ success: false, error: 'API key is required' });
+  }
+
+  try {
+    // Create a temporary AI service instance for testing
+    const testService = new AIService();
+    testService.setConfig({ provider, apiKey, model, baseUrl });
+    
+    // Test with a simple message
+    const testResponse = await testService.chat([
+      { role: 'system', content: 'You are a helpful assistant.' },
+      { role: 'user', content: 'Say "Hello" in one word.' }
+    ], { model, maxTokens: 10 });
+    
+    if (testResponse.content) {
+      res.json({ success: true, message: 'Configuration test successful', response: testResponse.content });
+    } else {
+      res.status(500).json({ success: false, error: 'No response from AI' });
+    }
+  } catch (error) {
+    console.error('Test config error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`UhandEngine WebUI Backend running on port ${PORT}`);
