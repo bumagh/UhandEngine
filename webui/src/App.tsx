@@ -2,7 +2,7 @@ import { useState } from 'react'
 import ProjectBrowser from './components/ProjectBrowser'
 import AIAssistant from './components/AIAssistant'
 import CodeEditor from './components/CodeEditor'
-import { Layout, Menu, Button } from 'lucide-react'
+import { Layout, Menu, Code } from 'lucide-react'
 
 function App() {
   const [activePanel, setActivePanel] = useState<'project' | 'ai' | 'editor'>('project')
@@ -36,7 +36,7 @@ function App() {
           }`}
           title="Code Editor"
         >
-          <Button className="w-6 h-6" />
+          <Code className="w-6 h-6" />
         </button>
       </div>
 
