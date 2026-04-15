@@ -17,7 +17,7 @@ cd d:\3learn\3GameEngine\UhandEngine\webui\backend
 node server.js
 ```
 
-服务器将在 http://localhost:8081 启动
+服务器将在 http://localhost:18081 启动
 
 ### 2. 启动前端开发服务器
 
@@ -28,13 +28,13 @@ cd d:\3learn\3GameEngine\UhandEngine\webui
 npm run dev
 ```
 
-前端将在 http://localhost:3000 启动
+前端将在 http://localhost:13000 启动
 
 ## 测试步骤
 
 ### 测试 1: 健康检查
 
-1. 打开浏览器访问 http://localhost:8081/api/health
+1. 打开浏览器访问 http://localhost:18081/api/health
 2. 应该看到类似以下响应：
 ```json
 {
@@ -46,7 +46,7 @@ npm run dev
 
 ### 测试 2: 项目结构加载
 
-1. 打开浏览器访问 http://localhost:3000
+1. 打开浏览器访问 http://localhost:13000
 2. 点击左侧的 Project Browser 图标
 3. 应该看到项目文件树加载
 4. 如果后端未启动，会显示错误信息
@@ -59,7 +59,7 @@ npm run dev
 
 ### 测试 4: 引擎信息查询
 
-1. 访问 http://localhost:8081/api/engine/info
+1. 访问 http://localhost:18081/api/engine/info
 2. 应该看到引擎信息：
 ```json
 {
@@ -82,7 +82,7 @@ npm run dev
 
 **解决方案**:
 1. 确认后端服务器正在运行
-2. 检查端口是否正确（后端 8081，前端 3000）
+2. 检查端口是否正确（后端 18081，前端 13000）
 3. 检查浏览器控制台的错误信息
 4. 确认 vite.config.ts 中的代理配置正确
 
