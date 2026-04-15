@@ -55,6 +55,10 @@ class AIService {
   async chatWithOpenAI(messages, options = {}) {
     const model = options.model || (this.config?.model) || process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
     
+    console.log('Sending request to:', this.openai.baseURL);
+    console.log('Model:', model);
+    console.log('Messages:', messages);
+    
     const response = await this.openai.chat.completions.create({
       model,
       messages,
@@ -63,17 +67,21 @@ class AIService {
       stream: options.stream || false,
     });
 
+    console.log('Raw response:', JSON.stringify(response, null, 2));
+
     if (options.stream) {
       return response; // Stream object
     }
 
     // Validate response
     if (!response.choices || response.choices.length === 0) {
-      throw new Error('No choices in response from OpenAI');
+      console.error('Response has no choices:', response);
+      throw new Error('No choices in response from API');
     }
 
     if (!response.choices[0].message || !response.choices[0].message.content) {
-      throw new Error('No message content in response from OpenAI');
+      console.error('Response has no message content:', response);
+      throw new Error('No message content in response from API');
     }
 
     return {
