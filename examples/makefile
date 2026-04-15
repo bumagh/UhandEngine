@@ -22,7 +22,7 @@ TEXTCOMPONENT_SOURCES = ../src/engine/UI/TextComponent.c
 ENGINE_OBJECTS=$(ENGINE_SOURCES:.c=.o)
 
 # 示例程序
-EXAMPLES = sprite_example text_example container_example properties_example scene_example render_example asset_example renderqueue_example input_example camera_example animation_example tween_example integration_example game_example performance_example sprite_component_example
+EXAMPLES = sprite_example text_example container_example properties_example scene_example render_example asset_example renderqueue_example input_example camera_example animation_example tween_example integration_example game_example performance_example sprite_component_example physics_example
 
 .PHONY: all clean $(EXAMPLES)
 
@@ -80,6 +80,9 @@ performance_example: performance_example.c $(ENGINE_OBJECTS) ../src/engine/Input
 
 sprite_component_example: sprite_component_example.c $(ENGINE_OBJECTS) ../src/engine/SpriteComponent.o ../src/engine/AssetManager.o
 	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< $(ENGINE_OBJECTS) ../src/engine/SpriteComponent.o ../src/engine/AssetManager.o -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -L$(SDL2_LIB_PATH)/SDL2_image_2.6.3 -lSDL2_image -L$(SDL2_LIB_PATH)/SDL2_ttf_2.20.2 -lSDL2_ttf -L$(SDL2_LIB_PATH)/SDL2_mixer_2.6.3 -lSDL2_mixer -mconsole
+
+physics_example: physics_example.c ../src/engine/Physics.o
+	$(CC) -o $@ $(CFLAGS) -I$(SDL2_INC_PATH) $< ../src/engine/Physics.o -L$(SDL2_LIB_PATH)/SDL2_2.28.1 -lSDL2main -lSDL2 -mconsole
 
 clean:
 	del /Q $(EXAMPLES) 2>nul || true
