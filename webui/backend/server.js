@@ -368,42 +368,69 @@ app.post('/api/pipeline/design', async (req, res) => {
     const response = await aiService.chat([
       { 
         role: 'system', 
-        content: `You are a game design expert for UhandEngine, a C-based 2D game engine.
-Generate a game design in JSON format with the following structure:
+        content: `You are a JSON data generator. Your ONLY task is to output valid JSON data.
+
+Generate a game design in JSON format with this exact structure:
 {
-  "game_type": "type of game",
+  "game_type": "string describing the game type",
   "scenes": [
     {
-      "name": "scene_name",
+      "name": "scene name",
       "objects": ["object1", "object2"],
       "description": "scene description"
     }
   ],
-  "components": ["sprite", "physics", "input", "collision"],
+  "components": ["component1", "component2"],
   "features": ["feature1", "feature2", "feature3"]
 }
 
-CRITICAL: Return ONLY the JSON object, no markdown code blocks, no explanation, no additional text.` 
+IMPORTANT RULES:
+1. Output ONLY the JSON object
+2. NO markdown code blocks (\`\`\`)
+3. NO explanations
+4. NO additional text
+5. Start your response with {
+6. End your response with }
+7. Ensure all JSON syntax is valid` 
       },
-      { role: 'user', content: `Generate a game design for: ${requirements}` }
+      { role: 'user', content: `Generate a game design JSON for: ${requirements}` }
     ]);
 
     console.log('AI design response:', response.content);
 
-    // Parse JSON from response
-    const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error('No JSON found in response:', response.content);
-      throw new Error('AI did not return valid JSON format');
+    // Try to extract JSON from response
+    let jsonStr = response.content;
+    
+    // Remove markdown code blocks if present
+    jsonStr = jsonStr.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+    
+    // Try to find JSON object in the content
+    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0];
     }
 
     let design;
     try {
-      design = JSON.parse(jsonMatch[0]);
+      design = JSON.parse(jsonStr);
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
-      console.error('Attempted to parse:', jsonMatch[0]);
+      console.error('Attempted to parse:', jsonStr);
       throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`);
+    }
+
+    // Validate design structure and provide defaults
+    if (!design.game_type) {
+      design.game_type = 'Unknown Game Type';
+    }
+    if (!design.scenes || !Array.isArray(design.scenes)) {
+      design.scenes = [{ name: 'Main Scene', objects: [], description: 'Default scene' }];
+    }
+    if (!design.components || !Array.isArray(design.components)) {
+      design.components = ['sprite', 'transform'];
+    }
+    if (!design.features || !Array.isArray(design.features)) {
+      design.features = ['Basic gameplay'];
     }
 
     console.log('Parsed design:', design);
