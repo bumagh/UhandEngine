@@ -15,6 +15,7 @@ function CodePanel() {
   const clearGeneratedFiles = usePipelineStore(state => state.clearGeneratedFiles)
   const setStage = usePipelineStore(state => state.setStage)
   const setSavedToDisk = usePipelineStore(state => state.setSavedToDisk)
+  const addHistory = usePipelineStore(state => state.addHistory)
 
   const generateCode = async () => {
     if (!design) {
@@ -34,6 +35,13 @@ function CodePanel() {
         const files = (response as any).files
         files.forEach((file: any) => {
           addGeneratedFile(file)
+        })
+        addHistory({
+          id: Date.now().toString(),
+          timestamp: new Date(),
+          stage: 'code',
+          description: `成功生成 ${files.length} 个代码文件`,
+          data: { fileCount: files.length }
         })
       } else {
         throw new Error(response.error || 'Failed to generate code')
@@ -76,6 +84,13 @@ function CodePanel() {
 
       if (response.success) {
         setSavedToDisk(true)
+        addHistory({
+          id: Date.now().toString(),
+          timestamp: new Date(),
+          stage: 'code',
+          description: `保存 ${response.fileCount} 个文件到文件系统`,
+          data: { path: response.path, fileCount: response.fileCount }
+        })
         alert(`成功保存 ${response.fileCount} 个文件到: ${response.path}`)
       } else {
         throw new Error(response.error || 'Failed to save files')

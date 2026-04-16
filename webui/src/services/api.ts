@@ -136,6 +136,13 @@ class ApiService {
       body: JSON.stringify({ pipelineId, files }),
     })
   }
+
+  async compileAndRunPipeline(pipelineId: string, files: any[]): Promise<ApiResponse> {
+    return this.request('/pipeline/compile-run', {
+      method: 'POST',
+      body: JSON.stringify({ pipelineId, files }),
+    })
+  }
 }
 
 export const apiService = new ApiService()

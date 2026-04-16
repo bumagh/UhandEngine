@@ -153,6 +153,7 @@ export const usePipelineStore = create<PipelineState>()(
         generatedFiles: state.generatedFiles,
         history: state.history,
         savedToDisk: state.savedToDisk,
+        feedback: state.feedback,
       }),
     }
   )

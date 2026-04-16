@@ -530,6 +530,153 @@ app.post('/api/pipeline/save-files', async (req, res) => {
   }
 });
 
+// Pipeline compile and run endpoint
+app.post('/api/pipeline/compile-run', async (req, res) => {
+  const { pipelineId, files } = req.body;
+
+  if (!pipelineId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Pipeline ID is required'
+    });
+  }
+
+  if (!files || !Array.isArray(files)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Files array is required'
+    });
+  }
+
+  try {
+    const pipelineDir = path.join(PROJECT_ROOT, 'engine-ref', pipelineId);
+
+    // Save files to pipeline directory
+    files.forEach(file => {
+      if (!file.path || typeof file.path !== 'string') {
+        console.warn('Skipping invalid file: missing path');
+        return;
+      }
+      if (!file.content || typeof file.content !== 'string') {
+        console.warn(`Skipping invalid file: missing content for ${file.path}`);
+        return;
+      }
+
+      const filePath = path.join(pipelineDir, file.path);
+      const resolvedPath = path.resolve(filePath);
+      const resolvedPipelineDir = path.resolve(pipelineDir);
+
+      if (!resolvedPath.startsWith(resolvedPipelineDir)) {
+        console.error(`Path traversal detected: ${file.path}`);
+        throw new Error(`Invalid file path: path traversal detected`);
+      }
+
+      const dir = path.dirname(filePath);
+
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      fs.writeFileSync(filePath, file.content, 'utf8');
+      console.log(`Saved file: ${filePath}`);
+    });
+
+    // Check for build script
+    const buildScript = path.join(pipelineDir, 'build.bat');
+    const cmakeFile = path.join(pipelineDir, 'CMakeLists.txt');
+    const makefile = path.join(pipelineDir, 'Makefile');
+
+    let buildCommand = '';
+    let buildDir = pipelineDir;
+
+    if (fs.existsSync(buildScript)) {
+      // Use build.bat for Windows
+      buildCommand = `cd "${pipelineDir}" && build.bat`;
+    } else if (fs.existsSync(cmakeFile)) {
+      // Use CMake
+      const cmakeBuildDir = path.join(pipelineDir, 'build');
+      if (!fs.existsSync(cmakeBuildDir)) {
+        fs.mkdirSync(cmakeBuildDir);
+      }
+      buildDir = cmakeBuildDir;
+      buildCommand = `cd "${cmakeBuildDir}" && cmake .. && cmake --build .`;
+    } else if (fs.existsSync(makefile)) {
+      // Use Makefile
+      buildCommand = `cd "${pipelineDir}" && make`;
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: 'No build script found (build.bat, CMakeLists.txt, or Makefile)'
+      });
+    }
+
+    console.log('Build command:', buildCommand);
+
+    // Execute build
+    exec(buildCommand, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Build error:', error);
+        return res.json({
+          success: false,
+          status: 'error',
+          output: stderr || stdout || error.message
+        });
+      }
+
+      console.log('Build output:', stdout);
+
+      // Find the executable
+      let executable = '';
+      if (process.platform === 'win32') {
+        const exeFiles = fs.readdirSync(buildDir).filter(f => f.endsWith('.exe'));
+        if (exeFiles.length > 0) {
+          executable = path.join(buildDir, exeFiles[0]);
+        }
+      } else {
+        // Linux/macOS
+        const exeFiles = fs.readdirSync(buildDir).filter(f => {
+          const filePath = path.join(buildDir, f);
+          try {
+            fs.accessSync(filePath, fs.constants.X_OK);
+            return true;
+          } catch {
+            return false;
+          }
+        });
+        if (exeFiles.length > 0) {
+          executable = path.join(buildDir, exeFiles[0]);
+        }
+      }
+
+      if (!executable) {
+        return res.json({
+          success: false,
+          status: 'error',
+          output: 'No executable found after build'
+        });
+      }
+
+      console.log('Executable:', executable);
+
+      // Run the executable
+      exec(`"${executable}"`, (runError, runStdout, runStderr) => {
+        res.json({
+          success: true,
+          status: 'completed',
+          buildOutput: stdout || stderr,
+          runOutput: runStdout || runStderr || runError?.message || 'Program executed successfully'
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Compile and run error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 app.post('/api/pipeline/generate-code', async (req, res) => {
   const { design, requirements } = req.body;
   
