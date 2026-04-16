@@ -1,6 +1,11 @@
 @echo off
 echo Restarting Frontend and Backend Development Servers...
 
+:: Kill existing terminal windows for backend and frontend
+echo Closing old terminal windows...
+taskkill /F /FI "WINDOWTITLE eq Backend Server*" 2>nul
+taskkill /F /FI "WINDOWTITLE eq Frontend Server*" 2>nul
+
 :: Kill backend server on port 18081
 echo Killing backend server on port 18081...
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr :18081') do (
