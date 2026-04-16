@@ -615,6 +615,21 @@ app.post('/api/pipeline/compile', async (req, res) => {
         }
       }
 
+      // Auto-fix Linux font paths to Windows font paths
+      if (process.platform === 'win32') {
+        content = content.replace(
+          /\/usr\/share\/fonts\/truetype\/dejavu\/DejaVuSans-Bold\.ttf/g,
+          'C:\\\\Windows\\\\Fonts\\\\arial.ttf'
+        );
+        content = content.replace(
+          /\/usr\/share\/fonts\/[^"']+/g,
+          'C:\\\\Windows\\\\Fonts\\\\arial.ttf'
+        );
+        if (content !== file.content) {
+          console.log(`Fixed Linux font paths in ${file.path}`);
+        }
+      }
+
       fs.writeFileSync(filePath, content, 'utf8');
       console.log(`Saved file: ${filePath}`);
     });
@@ -868,6 +883,12 @@ CRITICAL Windows main.c requirements:
 - The FIRST line of main.c MUST be: #define SDL_MAIN_HANDLED
 - The first line inside main() MUST be: SDL_SetMainReady();
 - This is REQUIRED to prevent "undefined reference to WinMain" linker error on Windows
+
+CRITICAL Windows font requirements:
+- Use Windows system fonts, NOT Linux paths
+- For TTF_OpenFont, use: "C:\\Windows\\Fonts\\arial.ttf" or "C:\\Windows\\Fonts\\tahoma.ttf"
+- Or use NULL to let SDL2 choose a default font
+- NEVER use Linux paths like /usr/share/fonts/
 
 For Windows platform:
 - Generate a build.bat script (not Makefile or CMakeLists.txt)
