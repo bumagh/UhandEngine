@@ -643,12 +643,35 @@ app.post('/api/pipeline/compile', async (req, res) => {
 
     if (targetPlatform === 'web') {
       // Web platform - use Emscripten
-      const emscriptenScript = path.join(pipelineDir, 'build-emscripten.sh');
+      const isWindows = process.platform === 'win32';
+      const emscriptenScript = path.join(pipelineDir, isWindows ? 'build-emscripten.bat' : 'build-emscripten.sh');
+
       if (fs.existsSync(emscriptenScript)) {
-        buildCommand = `cd "${pipelineDir}" && bash build-emscripten.sh`;
+        buildCommand = isWindows
+          ? `cd "${pipelineDir}" && build-emscripten.bat`
+          : `cd "${pipelineDir}" && bash build-emscripten.sh`;
       } else {
         // Generate default Emscripten build script
-        const emscriptenScriptContent = `#!/bin/bash
+        if (isWindows) {
+          const emscriptenScriptContent = `@echo off
+REM Emscripten build script for Windows
+echo Building for Web with Emscripten...
+
+emcc game.c main.c -o game.html ^
+  -I../../include ^
+  -s USE_SDL=2 ^
+  -s USE_SDL_TTF=2 ^
+  -s WASM=1 ^
+  -s ALLOW_MEMORY_GROWTH=1 ^
+  -s TOTAL_MEMORY=67108864 ^
+  --shell-file shell.html
+
+echo Build complete! Open game.html in a browser.
+`;
+          fs.writeFileSync(emscriptenScript, emscriptenScriptContent, 'utf8');
+          buildCommand = `cd "${pipelineDir}" && build-emscripten.bat`;
+        } else {
+          const emscriptenScriptContent = `#!/bin/bash
 # Emscripten build script
 echo "Building for Web with Emscripten..."
 
@@ -665,8 +688,9 @@ emcc game.c main.c -o game.html \\
 
 echo "Build complete! Open game.html in a browser."
 `;
-        fs.writeFileSync(emscriptenScript, emscriptenScriptContent, 'utf8');
-        buildCommand = `cd "${pipelineDir}" && bash build-emscripten.sh`;
+          fs.writeFileSync(emscriptenScript, emscriptenScriptContent, 'utf8');
+          buildCommand = `cd "${pipelineDir}" && bash build-emscripten.sh`;
+        }
       }
       buildDir = pipelineDir;
     } else {
