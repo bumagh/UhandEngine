@@ -287,6 +287,84 @@ app.post('/api/ai/config/test', async (req, res) => {
   }
 });
 
+// Pipeline API
+app.post('/api/pipeline/analyze', async (req, res) => {
+  const { requirements } = req.body;
+  
+  if (!requirements) {
+    return res.status(400).json({ success: false, error: 'Requirements are required' });
+  }
+
+  try {
+    // Analyze requirements using AI
+    const response = await aiService.chat([
+      { 
+        role: 'system', 
+        content: 'You are a game design expert. Analyze the user requirements and provide a brief summary of the game type and key features.' 
+      },
+      { role: 'user', content: requirements }
+    ]);
+
+    res.json({ 
+      success: true, 
+      analysis: response.content 
+    });
+  } catch (error) {
+    console.error('Requirements analysis error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/pipeline/design', async (req, res) => {
+  const { requirements } = req.body;
+  
+  if (!requirements) {
+    return res.status(400).json({ success: false, error: 'Requirements are required' });
+  }
+
+  try {
+    // Generate design using AI
+    const response = await aiService.chat([
+      { 
+        role: 'system', 
+        content: `You are a game design expert for UhandEngine, a C-based 2D game engine.
+Generate a game design in JSON format with the following structure:
+{
+  "game_type": "type of game",
+  "scenes": [
+    {
+      "name": "scene_name",
+      "objects": ["object1", "object2"],
+      "description": "scene description"
+    }
+  ],
+  "components": ["sprite", "physics", "input", "collision"],
+  "features": ["feature1", "feature2", "feature3"]
+}
+
+Only return the JSON, no other text.` 
+      },
+      { role: 'user', content: requirements }
+    ]);
+
+    // Parse JSON from response
+    const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Failed to parse design JSON');
+    }
+
+    const design = JSON.parse(jsonMatch[0]);
+
+    res.json({ 
+      success: true, 
+      design 
+    });
+  } catch (error) {
+    console.error('Design generation error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`UhandEngine WebUI Backend running on port ${PORT}`);

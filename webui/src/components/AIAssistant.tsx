@@ -23,12 +23,13 @@ function AIAssistant() {
   const [loading, setLoading] = useState(false)
   const [aiConfigured, setAiConfigured] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { currentFile, projectStructure, engineInfo, loadEngineInfo } = useStore()
+  const { currentFile, projectStructure, engineInfo, loadEngineInfo, loadProjectStructure } = useStore()
 
   useEffect(() => {
     checkAIStatus()
     loadAndApplyConfig()
     loadEngineInfo()
+    loadProjectStructure()
   }, [])
 
   const checkAIStatus = async () => {
@@ -78,29 +79,37 @@ function AIAssistant() {
     setError(null)
 
     try {
-      // Build system prompt with context (optimized to reduce size)
-      let systemPrompt = 'You are a helpful AI assistant for UhandEngine game engine.\n\n'
-      
+      let systemPrompt = `You are UhandEngine AI Assistant for this IDE project.
+Always answer based on the provided project context below.
+If asked "UhandEngine是什么", explain it as: a lightweight C + SDL2 game engine prototype with native and web (Emscripten) targets, evolving toward Phaser-like Scene-first architecture.`
+
+      const contextParts: string[] = []
+
       if (engineInfo) {
-        systemPrompt += `Engine: ${engineInfo.name} v${engineInfo.version}\n`
-        systemPrompt += `Description: ${engineInfo.description}\n`
-        systemPrompt += `Systems: ${engineInfo.systems?.join(', ') || 'N/A'}\n\n`
+        contextParts.push(`Engine: ${engineInfo.name} v${engineInfo.version}`)
+        contextParts.push(`Description: ${engineInfo.description}`)
+        contextParts.push(`Systems: ${engineInfo.systems?.join(', ') || 'N/A'}`)
       }
-      
+
       if (projectStructure) {
-        const folders = projectStructure.filter(item => item.type === 'folder').slice(0, 10)
-        systemPrompt += `Project folders: ${folders.map(f => f.name).join(', ')}\n\n`
+        const folders = projectStructure.filter(item => item.type === 'folder').slice(0, 8)
+        contextParts.push(`Project folders: ${folders.map(f => f.name).join(', ')}`)
       }
-      
+
       if (currentFile) {
-        systemPrompt += `Current file: ${currentFile.path}\n`
-        systemPrompt += `Content preview:\n${currentFile.content.substring(0, 300)}...\n\n`
+        contextParts.push(`Current file: ${currentFile.path}`)
       }
+
+      const compactContext = contextParts.join('\n')
+      const recentMessages = messages.slice(-6).map(m => ({ role: m.role, content: m.content }))
 
       const messagesForAI = [
         { role: 'system', content: systemPrompt },
-        ...messages.map(m => ({ role: m.role, content: m.content })),
-        { role: 'user', content: input }
+        ...recentMessages,
+        {
+          role: 'user',
+          content: `[PROJECT CONTEXT]\n${compactContext || 'No context loaded yet.'}\n\n[USER QUESTION]\n${input}`
+        }
       ]
 
       const response = await apiService.chatWithAI(messagesForAI)

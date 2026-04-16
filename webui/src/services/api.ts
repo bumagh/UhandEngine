@@ -115,6 +115,20 @@ class ApiService {
       body: JSON.stringify(config),
     })
   }
+
+  async analyzeRequirements(requirements: string): Promise<ApiResponse> {
+    return this.request('/pipeline/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ requirements }),
+    })
+  }
+
+  async generateDesign(requirements: string): Promise<ApiResponse> {
+    return this.request('/pipeline/design', {
+      method: 'POST',
+      body: JSON.stringify({ requirements }),
+    })
+  }
 }
 
 export const apiService = new ApiService()
