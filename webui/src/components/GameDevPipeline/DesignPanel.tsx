@@ -29,7 +29,15 @@ function DesignPanel() {
       }
     } catch (error) {
       console.error('Design generation error:', error)
-      alert('设计生成失败：' + (error instanceof Error ? error.message : '未知错误'))
+      const errorMessage = error instanceof Error ? error.message : '未知错误'
+      
+      if (errorMessage.includes('429') || errorMessage.includes('rate limit')) {
+        alert('API 请求过于频繁，请稍等片刻后重试')
+      } else if (errorMessage.includes('JSON') || errorMessage.includes('parse')) {
+        alert('AI 返回格式错误，请重试或联系管理员')
+      } else {
+        alert('设计生成失败：' + errorMessage)
+      }
     } finally {
       setLoading(false)
     }

@@ -54,8 +54,19 @@ function RequirementsPanel() {
     setRequirements(input)
     
     try {
-      const response = await apiService.analyzeRequirements(input)
-      
+      let response = await apiService.analyzeRequirements(input)
+
+      if (!response.success && response.error?.includes('AI not configured')) {
+        const saved = localStorage.getItem('ai-config')
+        if (saved) {
+          const config = JSON.parse(saved)
+          if (config.apiKey) {
+            await apiService.saveAIConfig(config)
+            response = await apiService.analyzeRequirements(input)
+          }
+        }
+      }
+
       if (response.success) {
         setStage('design')
       } else {

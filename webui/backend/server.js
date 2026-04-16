@@ -383,18 +383,30 @@ Generate a game design in JSON format with the following structure:
   "features": ["feature1", "feature2", "feature3"]
 }
 
-Only return the JSON, no other text.` 
+CRITICAL: Return ONLY the JSON object, no markdown code blocks, no explanation, no additional text.` 
       },
-      { role: 'user', content: requirements }
+      { role: 'user', content: `Generate a game design for: ${requirements}` }
     ]);
+
+    console.log('AI design response:', response.content);
 
     // Parse JSON from response
     const jsonMatch = response.content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error('Failed to parse design JSON');
+      console.error('No JSON found in response:', response.content);
+      throw new Error('AI did not return valid JSON format');
     }
 
-    const design = JSON.parse(jsonMatch[0]);
+    let design;
+    try {
+      design = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      console.error('Attempted to parse:', jsonMatch[0]);
+      throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`);
+    }
+
+    console.log('Parsed design:', design);
 
     res.json({ 
       success: true, 
@@ -402,6 +414,15 @@ Only return the JSON, no other text.`
     });
   } catch (error) {
     console.error('Design generation error:', error);
+    
+    // Handle 429 rate limit errors
+    if (error.message.includes('429')) {
+      return res.status(429).json({ 
+        success: false, 
+        error: 'API rate limit exceeded. Please wait a moment and try again.' 
+      });
+    }
+    
     res.status(500).json({ success: false, error: error.message });
   }
 });

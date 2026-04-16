@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { usePipelineStore } from '../../store/pipelineStore'
+import { apiService } from '../../services/api'
 import PipelineSidebar from './PipelineSidebar'
 import RequirementsPanel from './RequirementsPanel'
 import DesignPanel from './DesignPanel'
@@ -10,6 +12,24 @@ import HistoryPanel from './HistoryPanel'
 
 function GameDevPipeline() {
   const currentStage = usePipelineStore(state => state.currentStage)
+
+  useEffect(() => {
+    const syncAIConfig = async () => {
+      const saved = localStorage.getItem('ai-config')
+      if (!saved) return
+
+      try {
+        const config = JSON.parse(saved)
+        if (config.apiKey) {
+          await apiService.saveAIConfig(config)
+        }
+      } catch (error) {
+        console.error('Failed to sync AI config for pipeline:', error)
+      }
+    }
+
+    syncAIConfig()
+  }, [])
 
   const renderPanel = () => {
     switch (currentStage) {
