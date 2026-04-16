@@ -15,9 +15,13 @@ function PipelineSidebar() {
   const currentStage = usePipelineStore(state => state.currentStage)
   const setStage = usePipelineStore(state => state.setStage)
   const reset = usePipelineStore(state => state.reset)
+  const setPipelineId = usePipelineStore(state => state.setPipelineId)
 
   const handleReset = () => {
     if (confirm('确定要重置所有进度吗？这将清除所有已保存的数据。')) {
+      // Generate new pipeline ID
+      const newId = `pipeline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      setPipelineId(newId)
       reset()
       localStorage.removeItem('pipeline-storage')
     }

@@ -12,8 +12,17 @@ import HistoryPanel from './HistoryPanel'
 
 function GameDevPipeline() {
   const currentStage = usePipelineStore(state => state.currentStage)
+  const pipelineId = usePipelineStore(state => state.pipelineId)
+  const setPipelineId = usePipelineStore(state => state.setPipelineId)
+  const reset = usePipelineStore(state => state.reset)
 
   useEffect(() => {
+    // Generate pipeline ID if not exists
+    if (!pipelineId) {
+      const newId = `pipeline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      setPipelineId(newId)
+    }
+
     const syncAIConfig = async () => {
       const saved = localStorage.getItem('ai-config')
       if (!saved) return
@@ -29,7 +38,7 @@ function GameDevPipeline() {
     }
 
     syncAIConfig()
-  }, [])
+  }, [pipelineId, setPipelineId])
 
   const renderPanel = () => {
     switch (currentStage) {

@@ -129,6 +129,13 @@ class ApiService {
       body: JSON.stringify({ design, requirements }),
     })
   }
+
+  async savePipelineFiles(pipelineId: string, files: any[]): Promise<ApiResponse> {
+    return this.request('/pipeline/save-files', {
+      method: 'POST',
+      body: JSON.stringify({ pipelineId, files }),
+    })
+  }
 }
 
 export const apiService = new ApiService()

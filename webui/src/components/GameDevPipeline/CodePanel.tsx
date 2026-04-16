@@ -1,16 +1,20 @@
 import { useState } from 'react'
-import { Code, Play, RefreshCw } from 'lucide-react'
+import { Code, Play, RefreshCw, Save } from 'lucide-react'
 import { usePipelineStore } from '../../store/pipelineStore'
 import { apiService } from '../../services/api'
 
 function CodePanel() {
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const generatedFiles = usePipelineStore(state => state.generatedFiles)
   const design = usePipelineStore(state => state.design)
   const requirements = usePipelineStore(state => state.requirements)
+  const pipelineId = usePipelineStore(state => state.pipelineId)
+  const savedToDisk = usePipelineStore(state => state.savedToDisk)
   const addGeneratedFile = usePipelineStore(state => state.addGeneratedFile)
   const clearGeneratedFiles = usePipelineStore(state => state.clearGeneratedFiles)
   const setStage = usePipelineStore(state => state.setStage)
+  const setSavedToDisk = usePipelineStore(state => state.setSavedToDisk)
 
   const generateCode = async () => {
     if (!design) {
@@ -52,6 +56,37 @@ function CodePanel() {
 
   const handleRegenerate = () => {
     generateCode()
+  }
+
+  const handleSaveToDisk = async () => {
+    if (!pipelineId) {
+      alert('Pipeline ID 不存在，请刷新页面重试')
+      return
+    }
+
+    if (generatedFiles.length === 0) {
+      alert('没有生成的代码可以保存')
+      return
+    }
+
+    setSaving(true)
+
+    try {
+      const response = await apiService.savePipelineFiles(pipelineId, generatedFiles)
+
+      if (response.success) {
+        setSavedToDisk(true)
+        alert(`成功保存 ${response.fileCount} 个文件到: ${response.path}`)
+      } else {
+        throw new Error(response.error || 'Failed to save files')
+      }
+    } catch (error) {
+      console.error('Save files error:', error)
+      const errorMessage = error instanceof Error ? error.message : '未知错误'
+      alert('保存文件失败：' + errorMessage)
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) {
@@ -115,6 +150,14 @@ function CodePanel() {
                 >
                   <RefreshCw className="w-5 h-5" />
                   重新生成
+                </button>
+                <button
+                  onClick={handleSaveToDisk}
+                  disabled={saving || savedToDisk}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="w-5 h-5" />
+                  {saving ? '保存中...' : savedToDisk ? '已保存' : '保存到项目'}
                 </button>
                 <button
                   onClick={() => setStage('preview')}

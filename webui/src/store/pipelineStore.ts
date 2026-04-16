@@ -49,31 +49,35 @@ export interface PipelineHistory {
 }
 
 export interface PipelineState {
-  currentStage: 'requirements' | 'design' | 'code' | 'preview' | 'build' | 'feedback' | 'history'
+  currentStage: string
+  pipelineId: string
   requirements: string
-  design: GameDesign | null
+  design: any
   generatedFiles: GeneratedFile[]
   buildStatus: BuildStatus
   runStatus: RunStatus
-  feedback: Feedback[]
-  history: PipelineHistory[]
-  
-  // Actions
-  setStage: (stage: PipelineState['currentStage']) => void
+  feedback: any[]
+  history: any[]
+  savedToDisk: boolean
+
+  setStage: (stage: string) => void
+  setPipelineId: (id: string) => void
   setRequirements: (requirements: string) => void
-  setDesign: (design: GameDesign) => void
+  setDesign: (design: any) => void
   addGeneratedFile: (file: GeneratedFile) => void
   clearGeneratedFiles: () => void
   updateGeneratedFile: (path: string, content: string) => void
   setBuildStatus: (status: BuildStatus) => void
   setRunStatus: (status: RunStatus) => void
-  addFeedback: (feedback: Feedback) => void
-  addHistory: (history: PipelineHistory) => void
+  addFeedback: (feedback: any) => void
+  addHistory: (history: any) => void
+  setSavedToDisk: (saved: boolean) => void
   reset: () => void
 }
 
 const initialState: PipelineState = {
   currentStage: 'requirements',
+  pipelineId: '',
   requirements: '',
   design: null,
   generatedFiles: [],
@@ -81,8 +85,10 @@ const initialState: PipelineState = {
   runStatus: { status: 'idle' },
   feedback: [],
   history: [],
-  
+  savedToDisk: false,
+
   setStage: () => {},
+  setPipelineId: () => {},
   setRequirements: () => {},
   setDesign: () => {},
   addGeneratedFile: () => {},
@@ -92,6 +98,7 @@ const initialState: PipelineState = {
   setRunStatus: () => {},
   addFeedback: () => {},
   addHistory: () => {},
+  setSavedToDisk: () => {},
   reset: () => {},
 }
 
@@ -101,6 +108,8 @@ export const usePipelineStore = create<PipelineState>()(
       ...initialState,
 
       setStage: (stage) => set({ currentStage: stage }),
+
+      setPipelineId: (id) => set({ pipelineId: id }),
 
       setRequirements: (requirements) => set({ requirements }),
 
@@ -130,16 +139,20 @@ export const usePipelineStore = create<PipelineState>()(
         history: [...state.history, history]
       })),
 
+      setSavedToDisk: (saved) => set({ savedToDisk: saved }),
+
       reset: () => set(initialState),
     }),
     {
       name: 'pipeline-storage',
       partialize: (state) => ({
         currentStage: state.currentStage,
+        pipelineId: state.pipelineId,
         requirements: state.requirements,
         design: state.design,
         generatedFiles: state.generatedFiles,
         history: state.history,
+        savedToDisk: state.savedToDisk,
       }),
     }
   )

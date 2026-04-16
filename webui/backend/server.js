@@ -449,8 +449,65 @@ IMPORTANT RULES:
         error: 'API rate limit exceeded. Please wait a moment and try again.' 
       });
     }
-    
+
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Pipeline save files endpoint
+app.post('/api/pipeline/save-files', async (req, res) => {
+  const { pipelineId, files } = req.body;
+
+  if (!pipelineId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Pipeline ID is required'
+    });
+  }
+
+  if (!files || !Array.isArray(files)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Files array is required'
+    });
+  }
+
+  try {
+    const fs = require('fs');
+    const path = require('path');
+
+    // Create directory for this pipeline
+    const pipelineDir = path.join(PROJECT_ROOT, 'engine-ref', pipelineId);
+
+    if (!fs.existsSync(pipelineDir)) {
+      fs.mkdirSync(pipelineDir, { recursive: true });
+    }
+
+    // Write each file
+    files.forEach(file => {
+      const filePath = path.join(pipelineDir, file.path);
+      const dir = path.dirname(filePath);
+
+      // Create directory if it doesn't exist
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      fs.writeFileSync(filePath, file.content, 'utf8');
+      console.log(`Saved file: ${filePath}`);
+    });
+
+    res.json({
+      success: true,
+      path: pipelineDir,
+      fileCount: files.length
+    });
+  } catch (error) {
+    console.error('Save files error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 
