@@ -61,7 +61,7 @@ function GameDevPipeline() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
+    <div className="flex flex-1 bg-gray-900 text-white h-full">
       <PipelineSidebar />
       <div className="flex-1 flex flex-col">
         {renderPanel()}
