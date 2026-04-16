@@ -1,12 +1,23 @@
 const express = require('express');
-const cors = require('cors');
 const bodyParser = require('body-parser');
-const fs = require('fs');
+const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const { exec } = require('child_process');
 require('dotenv').config();
 
 const AIService = require('./ai-service');
+
+// Load saved AI config from file if exists
+const AI_CONFIG_FILE = path.join(__dirname, '.ai-config.json');
+let savedAIConfig = null;
+if (fs.existsSync(AI_CONFIG_FILE)) {
+  try {
+    savedAIConfig = JSON.parse(fs.readFileSync(AI_CONFIG_FILE, 'utf8'));
+  } catch (error) {
+    console.error('Failed to load AI config file:', error);
+  }
+}
 
 const app = express();
 const PORT = 18081;
@@ -27,6 +38,12 @@ const PROJECT_ROOT = path.resolve(__dirname, '../../');
 
 // Initialize AI Service
 const aiService = new AIService();
+
+// Apply saved AI config if exists
+if (savedAIConfig) {
+  aiService.setConfig(savedAIConfig);
+  console.log('Applied saved AI config from file');
+}
 
 // API Routes
 
@@ -235,15 +252,23 @@ app.post('/api/ai/analyze', async (req, res) => {
 app.post('/api/ai/config', (req, res) => {
   const { provider, apiKey, model, baseUrl } = req.body;
   
+  console.log('Saving AI config:', { provider, hasApiKey: !!apiKey, model, baseUrl });
+  
   if (!apiKey) {
     return res.status(400).json({ success: false, error: 'API key is required' });
   }
 
   try {
-    // Update AI service with new config
-    aiService.setConfig({ provider, apiKey, model, baseUrl });
+    const config = { provider, apiKey, model, baseUrl };
     
-    res.json({ success: true, message: 'Configuration saved' });
+    // Apply to AI service
+    aiService.setConfig(config);
+    
+    // Save to file for persistence
+    fs.writeFileSync(AI_CONFIG_FILE, JSON.stringify(config, null, 2));
+    console.log('AI config saved to file:', AI_CONFIG_FILE);
+    
+    res.json({ success: true, message: 'AI configuration saved' });
   } catch (error) {
     console.error('Save config error:', error);
     res.status(500).json({ success: false, error: error.message });
