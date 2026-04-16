@@ -659,8 +659,11 @@ app.post('/api/pipeline/compile', async (req, res) => {
       const emscriptenScript = path.join(pipelineDir, isWindows ? 'build-emscripten.bat' : 'build-emscripten.sh');
 
       if (fs.existsSync(emscriptenScript)) {
+        // Set Emscripten environment variables before running build
+        const emsdkPath = 'C:\\emsdk';
+        const emscriptenPath = path.join(emsdkPath, 'upstream', 'emscripten');
         buildCommand = isWindows
-          ? `cd "${pipelineDir}" && build-emscripten.bat`
+          ? `set EMSDK=${emsdkPath} && set PATH=${emsdkPath};${emscriptenPath};%PATH% && cd "${pipelineDir}" && build-emscripten.bat`
           : `cd "${pipelineDir}" && bash build-emscripten.sh`;
       } else {
         // Generate default Emscripten build script
@@ -669,6 +672,10 @@ app.post('/api/pipeline/compile', async (req, res) => {
 REM Emscripten build script for Windows
 REM Based on src/makefile configuration
 echo Building for Web with Emscripten...
+
+REM Set Emscripten environment
+set EMSDK=C:\\emsdk
+set PATH=C:\\emsdk;C:\\emsdk\\upstream\\emscripten;%PATH%
 
 emcc game.c main.c ^
   -Wno-int-conversion ^
