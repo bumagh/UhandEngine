@@ -667,16 +667,20 @@ app.post('/api/pipeline/compile', async (req, res) => {
         if (isWindows) {
           const emscriptenScriptContent = `@echo off
 REM Emscripten build script for Windows
+REM Based on src/makefile configuration
 echo Building for Web with Emscripten...
 
-emcc game.c main.c -o game.html ^
-  -I../../include ^
+emcc game.c main.c ^
+  -Wno-int-conversion ^
+  -Wno-implicit-function-declaration ^
+  -Wno-incompatible-function-pointer-types ^
   -s USE_SDL=2 ^
   -s USE_SDL_TTF=2 ^
   -s WASM=1 ^
   -s ALLOW_MEMORY_GROWTH=1 ^
-  -s TOTAL_MEMORY=67108864 ^
-  --shell-file shell.html
+  -I../../include ^
+  -o game.html ^
+  -std=c99
 
 echo Build complete! Open game.html in a browser.
 `;
@@ -685,18 +689,20 @@ echo Build complete! Open game.html in a browser.
         } else {
           const emscriptenScriptContent = `#!/bin/bash
 # Emscripten build script
+# Based on src/makefile configuration
 echo "Building for Web with Emscripten..."
 
-emcc game.c main.c -o game.html \\
-  -I../../include \\
-  -L../../lib/SDL2_2.28.1 -lSDL2 \\
-  -L../../lib/SDL2_ttf_2.20.2 -lSDL2_ttf \\
+emcc game.c main.c \\
+  -Wno-int-conversion \\
+  -Wno-implicit-function-declaration \\
+  -Wno-incompatible-function-pointer-types \\
   -s USE_SDL=2 \\
   -s USE_SDL_TTF=2 \\
   -s WASM=1 \\
   -s ALLOW_MEMORY_GROWTH=1 \\
-  -s TOTAL_MEMORY=67108864 \\
-  --shell-file shell.html
+  -I../../include \\
+  -o game.html \\
+  -std=c99
 
 echo "Build complete! Open game.html in a browser."
 `;
