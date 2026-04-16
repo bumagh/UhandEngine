@@ -553,7 +553,7 @@ app.post('/api/pipeline/save-files', async (req, res) => {
 
 // Pipeline compile endpoint
 app.post('/api/pipeline/compile', async (req, res) => {
-  const { pipelineId, files } = req.body;
+  const { pipelineId, files, platform } = req.body;
 
   if (!pipelineId) {
     return res.status(400).json({
@@ -568,6 +568,9 @@ app.post('/api/pipeline/compile', async (req, res) => {
       error: 'Files array is required'
     });
   }
+
+  const targetPlatform = platform || 'windows';
+  console.log('Compiling for platform:', targetPlatform);
 
   try {
     const pipelineDir = path.join(PROJECT_ROOT, 'engine-ref', pipelineId);
@@ -634,33 +637,64 @@ app.post('/api/pipeline/compile', async (req, res) => {
       console.log(`Saved file: ${filePath}`);
     });
 
-    // Check for build script
-    const buildScript = path.join(pipelineDir, 'build.bat');
-    const cmakeFile = path.join(pipelineDir, 'CMakeLists.txt');
-    const makefile = path.join(pipelineDir, 'Makefile');
-
+    // Check for build script based on platform
     let buildCommand = '';
     let buildDir = pipelineDir;
 
-    if (fs.existsSync(buildScript)) {
-      // Use build.bat for Windows
-      buildCommand = `cd "${pipelineDir}" && build.bat`;
-    } else if (fs.existsSync(cmakeFile)) {
-      // Use CMake
-      const cmakeBuildDir = path.join(pipelineDir, 'build');
-      if (!fs.existsSync(cmakeBuildDir)) {
-        fs.mkdirSync(cmakeBuildDir);
+    if (targetPlatform === 'web') {
+      // Web platform - use Emscripten
+      const emscriptenScript = path.join(pipelineDir, 'build-emscripten.sh');
+      if (fs.existsSync(emscriptenScript)) {
+        buildCommand = `cd "${pipelineDir}" && bash build-emscripten.sh`;
+      } else {
+        // Generate default Emscripten build script
+        const emscriptenScriptContent = `#!/bin/bash
+# Emscripten build script
+echo "Building for Web with Emscripten..."
+
+emcc game.c main.c -o game.html \\
+  -I../../include \\
+  -L../../lib/SDL2_2.28.1 -lSDL2 \\
+  -L../../lib/SDL2_ttf_2.20.2 -lSDL2_ttf \\
+  -s USE_SDL=2 \\
+  -s USE_SDL_TTF=2 \\
+  -s WASM=1 \\
+  -s ALLOW_MEMORY_GROWTH=1 \\
+  -s TOTAL_MEMORY=67108864 \\
+  --shell-file shell.html
+
+echo "Build complete! Open game.html in a browser."
+`;
+        fs.writeFileSync(emscriptenScript, emscriptenScriptContent, 'utf8');
+        buildCommand = `cd "${pipelineDir}" && bash build-emscripten.sh`;
       }
-      buildDir = cmakeBuildDir;
-      buildCommand = `cd "${cmakeBuildDir}" && cmake .. && cmake --build .`;
-    } else if (fs.existsSync(makefile)) {
-      // Use Makefile
-      buildCommand = `cd "${pipelineDir}" && make`;
+      buildDir = pipelineDir;
     } else {
-      return res.status(400).json({
-        success: false,
-        error: 'No build script found (build.bat, CMakeLists.txt, or Makefile)'
-      });
+      // Windows platform
+      const buildScript = path.join(pipelineDir, 'build.bat');
+      const cmakeFile = path.join(pipelineDir, 'CMakeLists.txt');
+      const makefile = path.join(pipelineDir, 'Makefile');
+
+      if (fs.existsSync(buildScript)) {
+        // Use build.bat for Windows
+        buildCommand = `cd "${pipelineDir}" && build.bat`;
+      } else if (fs.existsSync(cmakeFile)) {
+        // Use CMake
+        const cmakeBuildDir = path.join(pipelineDir, 'build');
+        if (!fs.existsSync(cmakeBuildDir)) {
+          fs.mkdirSync(cmakeBuildDir);
+        }
+        buildDir = cmakeBuildDir;
+        buildCommand = `cd "${cmakeBuildDir}" && cmake .. && cmake --build .`;
+      } else if (fs.existsSync(makefile)) {
+        // Use Makefile
+        buildCommand = `cd "${pipelineDir}" && make`;
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: 'No build script found (build.bat, CMakeLists.txt, or Makefile)'
+        });
+      }
     }
 
     console.log('Build command:', buildCommand);
@@ -679,45 +713,55 @@ app.post('/api/pipeline/compile', async (req, res) => {
         });
       }
 
-      // Find the executable
+      // Find the executable based on platform
       let executable = '';
-      if (process.platform === 'win32') {
-        const exeFiles = fs.readdirSync(buildDir).filter(f => f.endsWith('.exe'));
-        console.log('Found exe files in build dir:', exeFiles);
-        if (exeFiles.length > 0) {
-          executable = path.join(buildDir, exeFiles[0]);
+      if (targetPlatform === 'web') {
+        // Web platform - look for HTML file
+        const htmlFiles = fs.readdirSync(buildDir).filter(f => f.endsWith('.html'));
+        console.log('Found HTML files in build dir:', htmlFiles);
+        if (htmlFiles.length > 0) {
+          executable = path.join(buildDir, htmlFiles[0]);
         }
       } else {
-        // Linux/macOS
-        const exeFiles = fs.readdirSync(buildDir).filter(f => {
-          const filePath = path.join(buildDir, f);
-          try {
-            fs.accessSync(filePath, fs.constants.X_OK);
-            return true;
-          } catch {
-            return false;
+        // Native platform
+        if (process.platform === 'win32') {
+          const exeFiles = fs.readdirSync(buildDir).filter(f => f.endsWith('.exe'));
+          console.log('Found exe files in build dir:', exeFiles);
+          if (exeFiles.length > 0) {
+            executable = path.join(buildDir, exeFiles[0]);
+          }
+        } else {
+          // Linux/macOS
+          const exeFiles = fs.readdirSync(buildDir).filter(f => {
+            const filePath = path.join(buildDir, f);
+            try {
+              fs.accessSync(filePath, fs.constants.X_OK);
+              return true;
+            } catch {
+              return false;
+            }
+          });
+          if (exeFiles.length > 0) {
+            executable = path.join(buildDir, exeFiles[0]);
+          }
+        }
+
+        // Copy SDL2 DLL files to pipeline directory for runtime (native only)
+        const dllSourceDir = path.join(PROJECT_ROOT, 'bin', 'UhandEngine');
+        const dllFiles = ['SDL2.dll', 'SDL2_ttf.dll'];
+        dllFiles.forEach(dllFile => {
+          const src = path.join(dllSourceDir, dllFile);
+          const dest = path.join(pipelineDir, dllFile);
+          if (fs.existsSync(src)) {
+            fs.copyFileSync(src, dest);
+            console.log(`Copied ${dllFile} to ${pipelineDir}`);
+          } else {
+            console.warn(`DLL file not found: ${src}`);
           }
         });
-        if (exeFiles.length > 0) {
-          executable = path.join(buildDir, exeFiles[0]);
-        }
       }
 
       console.log('Executable found:', executable);
-
-      // Copy SDL2 DLL files to pipeline directory for runtime
-      const dllSourceDir = path.join(PROJECT_ROOT, 'bin', 'UhandEngine');
-      const dllFiles = ['SDL2.dll', 'SDL2_ttf.dll'];
-      dllFiles.forEach(dllFile => {
-        const src = path.join(dllSourceDir, dllFile);
-        const dest = path.join(pipelineDir, dllFile);
-        if (fs.existsSync(src)) {
-          fs.copyFileSync(src, dest);
-          console.log(`Copied ${dllFile} to ${pipelineDir}`);
-        } else {
-          console.warn(`DLL file not found: ${src}`);
-        }
-      });
 
       res.json({
         success: true,
@@ -737,9 +781,9 @@ app.post('/api/pipeline/compile', async (req, res) => {
 
 // Pipeline run endpoint
 app.post('/api/pipeline/run', async (req, res) => {
-  const { pipelineId, executable } = req.body;
+  const { pipelineId, executable, platform } = req.body;
 
-  console.log('Run request received:', { pipelineId, executable });
+  console.log('Run request received:', { pipelineId, executable, platform });
 
   if (!pipelineId) {
     console.error('Pipeline ID is required');
@@ -749,53 +793,39 @@ app.post('/api/pipeline/run', async (req, res) => {
     });
   }
 
+  const targetPlatform = platform || 'windows';
+
   try {
     const pipelineDir = path.join(PROJECT_ROOT, 'engine-ref', pipelineId);
     let targetExecutable = executable;
 
     console.log('Pipeline directory:', pipelineDir);
+    console.log('Target platform:', targetPlatform);
 
     // If executable not provided, try to find it
     if (!targetExecutable) {
-      const buildDir = path.join(pipelineDir, 'build');
-      console.log('Checking build directory:', buildDir, 'exists:', fs.existsSync(buildDir));
-
-      if (fs.existsSync(buildDir)) {
-        if (process.platform === 'win32') {
-          const exeFiles = fs.readdirSync(buildDir).filter(f => f.endsWith('.exe'));
-          console.log('Found exe files in build:', exeFiles);
-          if (exeFiles.length > 0) {
-            targetExecutable = path.join(buildDir, exeFiles[0]);
-          }
-        } else {
-          const exeFiles = fs.readdirSync(buildDir).filter(f => {
-            const filePath = path.join(buildDir, f);
-            try {
-              fs.accessSync(filePath, fs.constants.X_OK);
-              return true;
-            } catch {
-              return false;
-            }
-          });
-          if (exeFiles.length > 0) {
-            targetExecutable = path.join(buildDir, exeFiles[0]);
-          }
+      if (targetPlatform === 'web') {
+        // Web platform - look for HTML file
+        const htmlFiles = fs.readdirSync(pipelineDir).filter(f => f.endsWith('.html'));
+        console.log('Found HTML files:', htmlFiles);
+        if (htmlFiles.length > 0) {
+          targetExecutable = path.join(pipelineDir, htmlFiles[0]);
         }
-      }
+      } else {
+        // Native platform
+        const buildDir = path.join(pipelineDir, 'build');
+        console.log('Checking build directory:', buildDir, 'exists:', fs.existsSync(buildDir));
 
-      // Check in pipeline directory
-      if (!targetExecutable) {
-        console.log('Checking pipeline directory:', pipelineDir, 'exists:', fs.existsSync(pipelineDir));
-        if (fs.existsSync(pipelineDir)) {
+        if (fs.existsSync(buildDir)) {
           if (process.platform === 'win32') {
-            const exeFiles = fs.readdirSync(pipelineDir).filter(f => f.endsWith('.exe'));
-            console.log('Found exe files in pipeline dir:', exeFiles);
+            const exeFiles = fs.readdirSync(buildDir).filter(f => f.endsWith('.exe'));
+            console.log('Found exe files in build:', exeFiles);
             if (exeFiles.length > 0) {
-              targetExecutable = path.join(pipelineDir, exeFiles[0]);
+              targetExecutable = path.join(buildDir, exeFiles[0]);
             }
           } else {
-            const exeFiles = fs.readdirSync(pipelineDir).filter(f => {
-              const filePath = path.join(pipelineDir, f);
+            const exeFiles = fs.readdirSync(buildDir).filter(f => {
+              const filePath = path.join(buildDir, f);
               try {
                 fs.accessSync(filePath, fs.constants.X_OK);
                 return true;
@@ -804,7 +834,34 @@ app.post('/api/pipeline/run', async (req, res) => {
               }
             });
             if (exeFiles.length > 0) {
-              targetExecutable = path.join(pipelineDir, exeFiles[0]);
+              targetExecutable = path.join(buildDir, exeFiles[0]);
+            }
+          }
+        }
+
+        // Check in pipeline directory
+        if (!targetExecutable) {
+          console.log('Checking pipeline directory:', pipelineDir, 'exists:', fs.existsSync(pipelineDir));
+          if (fs.existsSync(pipelineDir)) {
+            if (process.platform === 'win32') {
+              const exeFiles = fs.readdirSync(pipelineDir).filter(f => f.endsWith('.exe'));
+              console.log('Found exe files in pipeline dir:', exeFiles);
+              if (exeFiles.length > 0) {
+                targetExecutable = path.join(pipelineDir, exeFiles[0]);
+              }
+            } else {
+              const exeFiles = fs.readdirSync(pipelineDir).filter(f => {
+                const filePath = path.join(pipelineDir, f);
+                try {
+                  fs.accessSync(filePath, fs.constants.X_OK);
+                  return true;
+                } catch {
+                  return false;
+                }
+              });
+              if (exeFiles.length > 0) {
+                targetExecutable = path.join(pipelineDir, exeFiles[0]);
+              }
             }
           }
         }
@@ -822,15 +879,58 @@ app.post('/api/pipeline/run', async (req, res) => {
     console.log('Running executable:', targetExecutable);
     console.log('Executable exists:', fs.existsSync(targetExecutable));
 
-    // Run the executable
-    exec(`"${targetExecutable}"`, (error, stdout, stderr) => {
-      console.log('Run completed:', { error, stdoutLength: stdout?.length, stderrLength: stderr?.length });
-      res.json({
-        success: true,
-        status: 'completed',
-        output: stdout || stderr || error?.message || 'Program executed successfully'
+    if (targetPlatform === 'web') {
+      // Web platform - start HTTP server
+      const http = require('http');
+      const fs = require('fs');
+      const path = require('path');
+
+      const port = 18082;
+      const server = http.createServer((req, res) => {
+        let filePath = path.join(pipelineDir, req.url === '/' ? 'game.html' : req.url);
+        if (!fs.existsSync(filePath)) {
+          filePath = targetExecutable;
+        }
+
+        const extname = path.extname(filePath);
+        const contentType = {
+          '.html': 'text/html',
+          '.js': 'text/javascript',
+      '.wasm': 'application/wasm',
+          '.css': 'text/css'
+        }[extname] || 'application/octet-stream';
+
+        fs.readFile(filePath, (err, content) => {
+          if (err) {
+            res.writeHead(500);
+            res.end('Server Error');
+            return;
+          }
+          res.writeHead(200, { 'Content-Type': contentType });
+          res.end(content, 'utf-8');
+        });
       });
-    });
+
+      server.listen(port, () => {
+        console.log(`Web server started on port ${port}`);
+        res.json({
+          success: true,
+          status: 'completed',
+          output: `Web server started at http://localhost:${port}`,
+          url: `http://localhost:${port}`
+        });
+      });
+    } else {
+      // Native platform - run executable
+      exec(`"${targetExecutable}"`, (error, stdout, stderr) => {
+        console.log('Run completed:', { error, stdoutLength: stdout?.length, stderrLength: stderr?.length });
+        res.json({
+          success: true,
+          status: 'completed',
+          output: stdout || stderr || error?.message || 'Program executed successfully'
+        });
+      });
+    }
   } catch (error) {
     console.error('Run error:', error);
     res.status(500).json({
@@ -841,23 +941,24 @@ app.post('/api/pipeline/run', async (req, res) => {
 });
 
 app.post('/api/pipeline/generate-code', async (req, res) => {
-  const { design, requirements } = req.body;
-  
+  const { design, requirements, platform } = req.body;
+
   if (!design) {
     return res.status(400).json({ success: false, error: 'Design is required' });
   }
 
   // Check if AI is configured
   if (!aiService.isConfigured()) {
-    return res.status(400).json({ 
-      success: false, 
-      error: 'AI not configured. Please configure AI in Settings first.' 
+    return res.status(400).json({
+      success: false,
+      error: 'AI not configured. Please configure AI in Settings first.'
     });
   }
 
   try {
-    // Detect platform
+    const targetPlatform = platform || 'windows';
     const isWindows = process.platform === 'win32';
+    const isWeb = targetPlatform === 'web';
 
     // Generate code using AI
     const response = await aiService.chat([
@@ -866,7 +967,7 @@ app.post('/api/pipeline/generate-code', async (req, res) => {
         content: `You are a JSON formatter. Your ONLY job is to format C code into a specific JSON structure.
 
 You will receive C code and must return it in this exact JSON format:
-{"files":[{"path":"file.c","content":"C_CODE_HERE","type":"main"}]]
+{"files":[{"path":"file.c","content":"C_CODE_HERE","type":"main"}]}
 
 RULES:
 - Return ONLY the JSON, no other text
@@ -890,6 +991,14 @@ CRITICAL Windows font requirements:
 - Or use NULL to let SDL2 choose a default font
 - NEVER use Linux paths like /usr/share/fonts/
 
+${isWeb ? `
+CRITICAL Web platform requirements:
+- Generate build-emscripten.sh for Emscripten compilation
+- build-emscripten.sh must use emcc to compile to WebAssembly
+- Use SDL2 flags: -s USE_SDL=2 -s USE_SDL_TTF=2 -s WASM=1
+- Output should be game.html
+- Include shell.html template for web canvas
+` : `
 For Windows platform:
 - Generate a build.bat script (not Makefile or CMakeLists.txt)
 - build.bat must use these EXACT settings:
@@ -899,15 +1008,24 @@ For Windows platform:
   set SDL2_TTF_VER=SDL2_ttf_2.20.2
 - Compile each .c file separately with: gcc -c file.c -I%SDL2_INC% -o file.o
 - Link with: gcc *.o -o game.exe -L%SDL2_LIB%\\%SDL2_VER% -lSDL2 -L%SDL2_LIB%\\%SDL2_TTF_VER% -lSDL2_ttf -mconsole
-- Do NOT include -lSDL2main in the link command` 
+- Do NOT include -lSDL2main in the link command
+`}`
       },
       {
         role: 'user',
         content: `Format this C code into JSON: Generate a simple ${design.game_type || 'game'} with SDL2. Create main.c with game loop, game.c with logic, and a header file. Requirements: ${requirements}
 
-Target platform: Windows
+Target platform: ${isWeb ? 'Web (Emscripten)' : 'Windows'}
 
-IMPORTANT: main.c must start with #define SDL_MAIN_HANDLED before any includes. The first line inside main() must call SDL_SetMainReady(). Generate build.bat for compilation.
+${isWeb ? `
+IMPORTANT: Generate build-emscripten.sh script with emcc compilation flags.
+The script should compile to game.html using -s USE_SDL=2 -s USE_SDL_TTF=2 -s WASM=1.
+Include a shell.html template for web canvas rendering.
+` : `
+IMPORTANT: main.c must start with #define SDL_MAIN_HANDLED before any includes.
+The first line inside main() must call SDL_SetMainReady().
+Generate build.bat for compilation.
+`}
 
 Return the result as JSON with files array containing path, content (as escaped string), and type fields.`
       }

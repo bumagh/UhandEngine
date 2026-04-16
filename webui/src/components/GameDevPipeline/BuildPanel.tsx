@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Play, ArrowLeft, RefreshCw, Terminal, Hammer } from 'lucide-react'
+import { Play, ArrowLeft, RefreshCw, Terminal, Hammer, Monitor, Globe } from 'lucide-react'
 import { usePipelineStore } from '../../store/pipelineStore'
 import { apiService } from '../../services/api'
 
@@ -8,6 +8,7 @@ function BuildPanel() {
   const pipelineId = usePipelineStore(state => state.pipelineId)
   const setStage = usePipelineStore(state => state.setStage)
   const addHistory = usePipelineStore(state => state.addHistory)
+  const [platform, setPlatform] = useState<'windows' | 'web'>('windows')
   const [building, setBuilding] = useState(false)
   const [running, setRunning] = useState(false)
   const [buildOutput, setBuildOutput] = useState('')
@@ -33,7 +34,7 @@ function BuildPanel() {
     setRunOutput('')
 
     try {
-      const response = await apiService.compilePipeline(pipelineId, generatedFiles)
+      const response = await apiService.compilePipeline(pipelineId, generatedFiles, platform)
 
       if (response.success) {
         setBuildOutput(response.output || 'Build completed')
@@ -76,7 +77,7 @@ function BuildPanel() {
     setRunOutput('')
 
     try {
-      const response = await apiService.runPipeline(pipelineId, executable)
+      const response = await apiService.runPipeline(pipelineId, executable, platform)
 
       if (response.success) {
         setRunOutput(response.output || 'Run completed')
@@ -144,41 +145,63 @@ function BuildPanel() {
             </p>
           </div>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={handleCompile}
-            disabled={building}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {building ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                编译中...
-              </>
-            ) : (
-              <>
-                <Hammer className="w-4 h-4" />
-                编译
-              </>
-            )}
-          </button>
-          <button
-            onClick={handleRun}
-            disabled={running || buildStatus !== 'success'}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {running ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                运行中...
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4" />
-                运行
-              </>
-            )}
-          </button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-gray-700 rounded-lg p-1">
+            <button
+              onClick={() => setPlatform('windows')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors ${
+                platform === 'windows' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Monitor className="w-4 h-4" />
+              Windows
+            </button>
+            <button
+              onClick={() => setPlatform('web')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors ${
+                platform === 'web' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Globe className="w-4 h-4" />
+              Web
+            </button>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={handleCompile}
+              disabled={building}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {building ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  编译中...
+                </>
+              ) : (
+                <>
+                  <Hammer className="w-4 h-4" />
+                  编译
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleRun}
+              disabled={running || buildStatus !== 'success'}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {running ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  运行中...
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4" />
+                  运行
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

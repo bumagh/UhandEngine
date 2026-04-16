@@ -137,17 +137,17 @@ class ApiService {
     })
   }
 
-  async compilePipeline(pipelineId: string, files: any[]): Promise<ApiResponse> {
+  async compilePipeline(pipelineId: string, files: any[], platform: 'windows' | 'web' = 'windows'): Promise<ApiResponse> {
     return this.request('/pipeline/compile', {
       method: 'POST',
-      body: JSON.stringify({ pipelineId, files }),
+      body: JSON.stringify({ pipelineId, files, platform }),
     })
   }
 
-  async runPipeline(pipelineId: string, executable?: string): Promise<ApiResponse> {
+  async runPipeline(pipelineId: string, executable?: string, platform?: 'windows' | 'web'): Promise<ApiResponse> {
     return this.request('/pipeline/run', {
       method: 'POST',
-      body: JSON.stringify({ pipelineId, executable }),
+      body: JSON.stringify({ pipelineId, executable, platform }),
     })
   }
 
