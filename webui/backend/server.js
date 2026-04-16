@@ -551,8 +551,8 @@ app.post('/api/pipeline/save-files', async (req, res) => {
   }
 });
 
-// Pipeline compile and run endpoint
-app.post('/api/pipeline/compile-run', async (req, res) => {
+// Pipeline compile endpoint
+app.post('/api/pipeline/compile', async (req, res) => {
   const { pipelineId, files } = req.body;
 
   if (!pipelineId) {
@@ -669,28 +669,105 @@ app.post('/api/pipeline/compile-run', async (req, res) => {
         }
       }
 
-      if (!executable) {
-        return res.json({
-          success: false,
-          status: 'error',
-          output: 'No executable found after build'
-        });
-      }
-
-      console.log('Executable:', executable);
-
-      // Run the executable
-      exec(`"${executable}"`, (runError, runStdout, runStderr) => {
-        res.json({
-          success: true,
-          status: 'completed',
-          buildOutput: stdout || stderr,
-          runOutput: runStdout || runStderr || runError?.message || 'Program executed successfully'
-        });
+      res.json({
+        success: true,
+        status: 'completed',
+        output: stdout || stderr,
+        executable: executable
       });
     });
   } catch (error) {
-    console.error('Compile and run error:', error);
+    console.error('Compile error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Pipeline run endpoint
+app.post('/api/pipeline/run', async (req, res) => {
+  const { pipelineId, executable } = req.body;
+
+  if (!pipelineId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Pipeline ID is required'
+    });
+  }
+
+  try {
+    const pipelineDir = path.join(PROJECT_ROOT, 'engine-ref', pipelineId);
+    let targetExecutable = executable;
+
+    // If executable not provided, try to find it
+    if (!targetExecutable) {
+      const buildDir = path.join(pipelineDir, 'build');
+      if (fs.existsSync(buildDir)) {
+        if (process.platform === 'win32') {
+          const exeFiles = fs.readdirSync(buildDir).filter(f => f.endsWith('.exe'));
+          if (exeFiles.length > 0) {
+            targetExecutable = path.join(buildDir, exeFiles[0]);
+          }
+        } else {
+          const exeFiles = fs.readdirSync(buildDir).filter(f => {
+            const filePath = path.join(buildDir, f);
+            try {
+              fs.accessSync(filePath, fs.constants.X_OK);
+              return true;
+            } catch {
+              return false;
+            }
+          });
+          if (exeFiles.length > 0) {
+            targetExecutable = path.join(buildDir, exeFiles[0]);
+          }
+        }
+      }
+
+      // Check in pipeline directory
+      if (!targetExecutable) {
+        if (process.platform === 'win32') {
+          const exeFiles = fs.readdirSync(pipelineDir).filter(f => f.endsWith('.exe'));
+          if (exeFiles.length > 0) {
+            targetExecutable = path.join(pipelineDir, exeFiles[0]);
+          }
+        } else {
+          const exeFiles = fs.readdirSync(pipelineDir).filter(f => {
+            const filePath = path.join(pipelineDir, f);
+            try {
+              fs.accessSync(filePath, fs.constants.X_OK);
+              return true;
+            } catch {
+              return false;
+            }
+          });
+          if (exeFiles.length > 0) {
+            targetExecutable = path.join(pipelineDir, exeFiles[0]);
+          }
+        }
+      }
+    }
+
+    if (!targetExecutable) {
+      return res.status(400).json({
+        success: false,
+        error: 'No executable found. Please compile first.'
+      });
+    }
+
+    console.log('Running executable:', targetExecutable);
+
+    // Run the executable
+    exec(`"${targetExecutable}"`, (error, stdout, stderr) => {
+      res.json({
+        success: true,
+        status: 'completed',
+        output: stdout || stderr || error?.message || 'Program executed successfully'
+      });
+    });
+  } catch (error) {
+    console.error('Run error:', error);
     res.status(500).json({
       success: false,
       error: error.message

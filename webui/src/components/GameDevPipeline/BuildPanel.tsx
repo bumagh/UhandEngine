@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Play, ArrowLeft, RefreshCw, Terminal } from 'lucide-react'
+import { Play, ArrowLeft, RefreshCw, Terminal, Hammer } from 'lucide-react'
 import { usePipelineStore } from '../../store/pipelineStore'
 import { apiService } from '../../services/api'
 
@@ -9,11 +9,14 @@ function BuildPanel() {
   const setStage = usePipelineStore(state => state.setStage)
   const addHistory = usePipelineStore(state => state.addHistory)
   const [building, setBuilding] = useState(false)
+  const [running, setRunning] = useState(false)
   const [buildOutput, setBuildOutput] = useState('')
   const [runOutput, setRunOutput] = useState('')
-  const [status, setStatus] = useState<'idle' | 'building' | 'running' | 'success' | 'error'>('idle')
+  const [buildStatus, setBuildStatus] = useState<'idle' | 'building' | 'success' | 'error'>('idle')
+  const [runStatus, setRunStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
+  const [executable, setExecutable] = useState('')
 
-  const handleBuildAndRun = async () => {
+  const handleCompile = async () => {
     if (generatedFiles.length === 0) {
       alert('没有可编译的代码文件')
       return
@@ -25,35 +28,77 @@ function BuildPanel() {
     }
 
     setBuilding(true)
-    setStatus('building')
+    setBuildStatus('building')
     setBuildOutput('')
     setRunOutput('')
 
     try {
-      const response = await apiService.compileAndRunPipeline(pipelineId, generatedFiles)
+      const response = await apiService.compilePipeline(pipelineId, generatedFiles)
 
       if (response.success) {
-        setBuildOutput(response.buildOutput || 'Build completed')
-        setRunOutput(response.runOutput || 'Run completed')
-        setStatus('success')
+        setBuildOutput(response.output || 'Build completed')
+        setBuildStatus('success')
+        setExecutable(response.executable || '')
         addHistory({
           id: Date.now().toString(),
           timestamp: new Date(),
           stage: 'build',
-          description: '编译运行成功',
+          description: '编译成功',
           data: { status: response.status }
         })
       } else {
         setBuildOutput(response.output || 'Build failed')
-        setStatus('error')
+        setBuildStatus('error')
       }
     } catch (error) {
-      console.error('Build and run error:', error)
+      console.error('Compile error:', error)
       const errorMessage = error instanceof Error ? error.message : '未知错误'
-      setBuildOutput('编译运行失败：' + errorMessage)
-      setStatus('error')
+      setBuildOutput('编译失败：' + errorMessage)
+      setBuildStatus('error')
     } finally {
       setBuilding(false)
+    }
+  }
+
+  const handleRun = async () => {
+    if (!pipelineId) {
+      alert('Pipeline ID 不存在，请刷新页面重试')
+      return
+    }
+
+    if (buildStatus !== 'success') {
+      alert('请先编译代码')
+      return
+    }
+
+    setRunning(true)
+    setRunStatus('running')
+    setRunOutput('')
+
+    try {
+      const response = await apiService.runPipeline(pipelineId, executable)
+
+      if (response.success) {
+        setRunOutput(response.output || 'Run completed')
+        setRunStatus('success')
+        addHistory({
+          id: Date.now().toString(),
+          timestamp: new Date(),
+          stage: 'build',
+          description: '运行成功',
+          data: { status: response.status }
+        })
+      } else {
+        setRunOutput(response.output || 'Run failed')
+        setRunStatus('error')
+      }
+    } catch (error) {
+      console.error('Run error:', error)
+      const errorMessage = error instanceof Error ? error.message : '未知错误'
+      setRunOutput('运行失败：' + errorMessage)
+      setRunStatus('error')
+    } finally {
+      setRunning(false)
     }
   }
 
@@ -99,23 +144,42 @@ function BuildPanel() {
             </p>
           </div>
         </div>
-        <button
-          onClick={handleBuildAndRun}
-          disabled={building}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {building ? (
-            <>
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              编译中...
-            </>
-          ) : (
-            <>
-              <Play className="w-4 h-4" />
-              编译并运行
-            </>
-          )}
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleCompile}
+            disabled={building}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {building ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                编译中...
+              </>
+            ) : (
+              <>
+                <Hammer className="w-4 h-4" />
+                编译
+              </>
+            )}
+          </button>
+          <button
+            onClick={handleRun}
+            disabled={running || buildStatus !== 'success'}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {running ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                运行中...
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4" />
+                运行
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -126,19 +190,19 @@ function BuildPanel() {
             <Terminal className="w-4 h-4 text-gray-400" />
             <span className="text-sm font-medium text-gray-400">编译输出</span>
             <span className={`ml-auto text-xs px-2 py-1 rounded ${
-              status === 'success' ? 'bg-green-600/20 text-green-400' :
-              status === 'error' ? 'bg-red-600/20 text-red-400' :
-              status === 'building' ? 'bg-blue-600/20 text-blue-400' :
+              buildStatus === 'success' ? 'bg-green-600/20 text-green-400' :
+              buildStatus === 'error' ? 'bg-red-600/20 text-red-400' :
+              buildStatus === 'building' ? 'bg-blue-600/20 text-blue-400' :
               'bg-gray-700 text-gray-400'
             }`}>
-              {status === 'idle' ? '未编译' :
-               status === 'building' ? '编译中' :
-               status === 'success' ? '成功' :
-               status === 'error' ? '失败' : '运行中'}
+              {buildStatus === 'idle' ? '未编译' :
+               buildStatus === 'building' ? '编译中' :
+               buildStatus === 'success' ? '成功' :
+               buildStatus === 'error' ? '失败' : '未知'}
             </span>
           </div>
           <pre className="flex-1 bg-gray-900 text-gray-300 p-4 text-sm overflow-auto font-mono">
-            {buildOutput || '点击"编译并运行"开始编译'}
+            {buildOutput || '点击"编译"开始编译'}
           </pre>
         </div>
 
@@ -147,9 +211,20 @@ function BuildPanel() {
           <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center gap-2">
             <Terminal className="w-4 h-4 text-gray-400" />
             <span className="text-sm font-medium text-gray-400">运行输出</span>
+            <span className={`ml-auto text-xs px-2 py-1 rounded ${
+              runStatus === 'success' ? 'bg-green-600/20 text-green-400' :
+              runStatus === 'error' ? 'bg-red-600/20 text-red-400' :
+              runStatus === 'running' ? 'bg-blue-600/20 text-blue-400' :
+              'bg-gray-700 text-gray-400'
+            }`}>
+              {runStatus === 'idle' ? '未运行' :
+               runStatus === 'running' ? '运行中' :
+               runStatus === 'success' ? '成功' :
+               runStatus === 'error' ? '失败' : '未知'}
+            </span>
           </div>
           <pre className="flex-1 bg-gray-900 text-gray-300 p-4 text-sm overflow-auto font-mono">
-            {runOutput || '运行结果将显示在这里'}
+            {runOutput || '点击"运行"开始运行'}
           </pre>
         </div>
       </div>
