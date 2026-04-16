@@ -295,6 +295,14 @@ app.post('/api/pipeline/analyze', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Requirements are required' });
   }
 
+  // Check if AI is configured
+  if (!aiService.isConfigured()) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'AI not configured. Please configure AI in Settings first.' 
+    });
+  }
+
   try {
     // Analyze requirements using AI
     const response = await aiService.chat([
@@ -320,6 +328,14 @@ app.post('/api/pipeline/design', async (req, res) => {
   
   if (!requirements) {
     return res.status(400).json({ success: false, error: 'Requirements are required' });
+  }
+
+  // Check if AI is configured
+  if (!aiService.isConfigured()) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'AI not configured. Please configure AI in Settings first.' 
+    });
   }
 
   try {

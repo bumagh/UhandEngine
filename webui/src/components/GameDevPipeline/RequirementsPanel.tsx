@@ -63,7 +63,12 @@ function RequirementsPanel() {
       }
     } catch (error) {
       console.error('Analysis error:', error)
-      alert('分析失败：' + (error instanceof Error ? error.message : '未知错误'))
+      const errorMessage = error instanceof Error ? error.message : '未知错误'
+      if (errorMessage.includes('AI not configured')) {
+        alert('请先在 Settings 中配置 AI')
+      } else {
+        alert('分析失败：' + errorMessage)
+      }
     } finally {
       setLoading(false)
     }

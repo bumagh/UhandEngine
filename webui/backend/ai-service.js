@@ -175,10 +175,8 @@ Code Style:
   }
 
   isConfigured() {
-    if (this.provider === 'openai') {
-      return !!this.openai;
-    }
-    return false;
+    // Check if AI client is initialized (either from env or dynamic config)
+    return !!this.openai;
   }
 }
 
