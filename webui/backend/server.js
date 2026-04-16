@@ -474,20 +474,22 @@ app.post('/api/pipeline/generate-code', async (req, res) => {
     const response = await aiService.chat([
       { 
         role: 'system', 
-        content: `You are a C game engine code generator for UhandEngine, a C-based 2D game engine with SDL2.
+        content: `You are a JSON data generator. Your ONLY task is to output valid JSON data.
 
-Generate game code based on the design. Return the code in JSON format with this structure:
+Generate game code for UhandEngine (C-based 2D game engine with SDL2) based on the design.
+
+Return the code in JSON format with this exact structure:
 {
   "files": [
     {
-      "path": "file path",
-      "content": "file content",
-      "type": "scene|object|component|main"
+      "path": "src/game.c",
+      "content": "// C code here",
+      "type": "main"
     }
   ]
 }
 
-IMPORTANT RULES:
+CRITICAL RULES:
 1. Output ONLY the JSON object
 2. NO markdown code blocks (\`\`\`)
 3. NO explanations
@@ -495,9 +497,10 @@ IMPORTANT RULES:
 5. Start your response with {
 6. End your response with }
 7. Ensure all JSON syntax is valid
-8. Generate valid C code for UhandEngine` 
+8. Escape special characters in C code properly (newlines, quotes, backslashes)
+9. The "content" field should contain the actual C code as a string` 
       },
-      { role: 'user', content: `Generate game code for this design: ${JSON.stringify(design)}\n\nRequirements: ${requirements}` }
+      { role: 'user', content: `Generate game code JSON for this design: ${JSON.stringify(design)}\n\nRequirements: ${requirements}` }
     ]);
 
     console.log('AI code generation response:', response.content);
