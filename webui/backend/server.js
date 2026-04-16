@@ -598,7 +598,24 @@ app.post('/api/pipeline/compile', async (req, res) => {
         fs.mkdirSync(dir, { recursive: true });
       }
 
-      fs.writeFileSync(filePath, file.content, 'utf8');
+      let content = file.content;
+
+      // Auto-inject SDL_MAIN_HANDLED for Windows main.c files
+      if (file.path === 'main.c' && process.platform === 'win32') {
+        if (!content.includes('SDL_MAIN_HANDLED')) {
+          content = '#define SDL_MAIN_HANDLED\n' + content;
+          console.log('Injected SDL_MAIN_HANDLED into main.c');
+        }
+        if (!content.includes('SDL_SetMainReady')) {
+          content = content.replace(
+            /int\s+main\s*\(.*?\)\s*\{/,
+            match => match + '\n    SDL_SetMainReady();'
+          );
+          console.log('Injected SDL_SetMainReady() into main()');
+        }
+      }
+
+      fs.writeFileSync(filePath, content, 'utf8');
       console.log(`Saved file: ${filePath}`);
     });
 
@@ -635,21 +652,23 @@ app.post('/api/pipeline/compile', async (req, res) => {
 
     // Execute build
     exec(buildCommand, (error, stdout, stderr) => {
+      const fullOutput = (stdout || '') + '\n' + (stderr || '');
+      console.log('Build output:', fullOutput);
+
       if (error) {
         console.error('Build error:', error);
         return res.json({
           success: false,
           status: 'error',
-          output: stderr || stdout || error.message
+          output: fullOutput
         });
       }
-
-      console.log('Build output:', stdout);
 
       // Find the executable
       let executable = '';
       if (process.platform === 'win32') {
         const exeFiles = fs.readdirSync(buildDir).filter(f => f.endsWith('.exe'));
+        console.log('Found exe files in build dir:', exeFiles);
         if (exeFiles.length > 0) {
           executable = path.join(buildDir, exeFiles[0]);
         }
@@ -669,10 +688,12 @@ app.post('/api/pipeline/compile', async (req, res) => {
         }
       }
 
+      console.log('Executable found:', executable);
+
       res.json({
         success: true,
         status: 'completed',
-        output: stdout || stderr,
+        output: fullOutput,
         executable: executable
       });
     });
@@ -689,7 +710,10 @@ app.post('/api/pipeline/compile', async (req, res) => {
 app.post('/api/pipeline/run', async (req, res) => {
   const { pipelineId, executable } = req.body;
 
+  console.log('Run request received:', { pipelineId, executable });
+
   if (!pipelineId) {
+    console.error('Pipeline ID is required');
     return res.status(400).json({
       success: false,
       error: 'Pipeline ID is required'
@@ -700,12 +724,17 @@ app.post('/api/pipeline/run', async (req, res) => {
     const pipelineDir = path.join(PROJECT_ROOT, 'engine-ref', pipelineId);
     let targetExecutable = executable;
 
+    console.log('Pipeline directory:', pipelineDir);
+
     // If executable not provided, try to find it
     if (!targetExecutable) {
       const buildDir = path.join(pipelineDir, 'build');
+      console.log('Checking build directory:', buildDir, 'exists:', fs.existsSync(buildDir));
+
       if (fs.existsSync(buildDir)) {
         if (process.platform === 'win32') {
           const exeFiles = fs.readdirSync(buildDir).filter(f => f.endsWith('.exe'));
+          console.log('Found exe files in build:', exeFiles);
           if (exeFiles.length > 0) {
             targetExecutable = path.join(buildDir, exeFiles[0]);
           }
@@ -727,29 +756,34 @@ app.post('/api/pipeline/run', async (req, res) => {
 
       // Check in pipeline directory
       if (!targetExecutable) {
-        if (process.platform === 'win32') {
-          const exeFiles = fs.readdirSync(pipelineDir).filter(f => f.endsWith('.exe'));
-          if (exeFiles.length > 0) {
-            targetExecutable = path.join(pipelineDir, exeFiles[0]);
-          }
-        } else {
-          const exeFiles = fs.readdirSync(pipelineDir).filter(f => {
-            const filePath = path.join(pipelineDir, f);
-            try {
-              fs.accessSync(filePath, fs.constants.X_OK);
-              return true;
-            } catch {
-              return false;
+        console.log('Checking pipeline directory:', pipelineDir, 'exists:', fs.existsSync(pipelineDir));
+        if (fs.existsSync(pipelineDir)) {
+          if (process.platform === 'win32') {
+            const exeFiles = fs.readdirSync(pipelineDir).filter(f => f.endsWith('.exe'));
+            console.log('Found exe files in pipeline dir:', exeFiles);
+            if (exeFiles.length > 0) {
+              targetExecutable = path.join(pipelineDir, exeFiles[0]);
             }
-          });
-          if (exeFiles.length > 0) {
-            targetExecutable = path.join(pipelineDir, exeFiles[0]);
+          } else {
+            const exeFiles = fs.readdirSync(pipelineDir).filter(f => {
+              const filePath = path.join(pipelineDir, f);
+              try {
+                fs.accessSync(filePath, fs.constants.X_OK);
+                return true;
+              } catch {
+                return false;
+              }
+            });
+            if (exeFiles.length > 0) {
+              targetExecutable = path.join(pipelineDir, exeFiles[0]);
+            }
           }
         }
       }
     }
 
     if (!targetExecutable) {
+      console.error('No executable found');
       return res.status(400).json({
         success: false,
         error: 'No executable found. Please compile first.'
@@ -757,9 +791,11 @@ app.post('/api/pipeline/run', async (req, res) => {
     }
 
     console.log('Running executable:', targetExecutable);
+    console.log('Executable exists:', fs.existsSync(targetExecutable));
 
     // Run the executable
     exec(`"${targetExecutable}"`, (error, stdout, stderr) => {
+      console.log('Run completed:', { error, stdoutLength: stdout?.length, stderrLength: stderr?.length });
       res.json({
         success: true,
         status: 'completed',
@@ -814,20 +850,29 @@ RULES:
 - Escape backslashes as \\\\
 - The content field must be a valid JSON string containing the C code
 
-For Windows platform:
-- Generate a CMakeLists.txt instead of Makefile
-- Use SDL2 find_package in CMake
-- Ensure paths use forward slashes for CMake
+CRITICAL Windows main.c requirements:
+- The FIRST line of main.c MUST be: #define SDL_MAIN_HANDLED
+- The first line inside main() MUST be: SDL_SetMainReady();
+- This is REQUIRED to prevent "undefined reference to WinMain" linker error on Windows
 
-For Linux/macOS platform:
-- Generate a Makefile using sdl2-config
-- Use standard SDL2 compilation flags` 
+For Windows platform:
+- Generate a build.bat script (not Makefile or CMakeLists.txt)
+- build.bat must use these EXACT settings:
+  set SDL2_INC=..\\..\\include
+  set SDL2_LIB=..\\..\\lib
+  set SDL2_VER=SDL2_2.28.1
+  set SDL2_TTF_VER=SDL2_ttf_2.20.2
+- Compile each .c file separately with: gcc -c file.c -I%SDL2_INC% -o file.o
+- Link with: gcc *.o -o game.exe -L%SDL2_LIB%\\%SDL2_VER% -lSDL2 -L%SDL2_LIB%\\%SDL2_TTF_VER% -lSDL2_ttf -mconsole
+- Do NOT include -lSDL2main in the link command` 
       },
       {
         role: 'user',
         content: `Format this C code into JSON: Generate a simple ${design.game_type || 'game'} with SDL2. Create main.c with game loop, game.c with logic, and a header file. Requirements: ${requirements}
 
-Target platform: ${isWindows ? 'Windows (use CMakeLists.txt)' : 'Linux/macOS (use Makefile with sdl2-config)'}
+Target platform: Windows
+
+IMPORTANT: main.c must start with #define SDL_MAIN_HANDLED before any includes. The first line inside main() must call SDL_SetMainReady(). Generate build.bat for compilation.
 
 Return the result as JSON with files array containing path, content (as escaped string), and type fields.`
       }
