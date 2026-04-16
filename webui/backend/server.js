@@ -527,6 +527,9 @@ app.post('/api/pipeline/generate-code', async (req, res) => {
   }
 
   try {
+    // Detect platform
+    const isWindows = process.platform === 'win32';
+
     // Generate code using AI
     const response = await aiService.chat([
       {
@@ -545,11 +548,22 @@ RULES:
 - Escape newlines as \\n
 - Escape quotes as \\"
 - Escape backslashes as \\\\
-- The content field must be a valid JSON string containing the C code` 
+- The content field must be a valid JSON string containing the C code
+
+For Windows platform:
+- Generate a CMakeLists.txt instead of Makefile
+- Use SDL2 find_package in CMake
+- Ensure paths use forward slashes for CMake
+
+For Linux/macOS platform:
+- Generate a Makefile using sdl2-config
+- Use standard SDL2 compilation flags` 
       },
       {
         role: 'user',
         content: `Format this C code into JSON: Generate a simple ${design.game_type || 'game'} with SDL2. Create main.c with game loop, game.c with logic, and a header file. Requirements: ${requirements}
+
+Target platform: ${isWindows ? 'Windows (use CMakeLists.txt)' : 'Linux/macOS (use Makefile with sdl2-config)'}
 
 Return the result as JSON with files array containing path, content (as escaped string), and type fields.`
       }
