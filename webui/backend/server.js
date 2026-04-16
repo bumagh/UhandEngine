@@ -49,33 +49,54 @@ if (savedAIConfig) {
 
 // Get project structure
 app.get('/api/project/structure', (req, res) => {
-  const getDirectoryStructure = (dir, baseDir = dir) => {
-    const items = fs.readdirSync(dir, { withFileTypes: true });
-    return items.map(item => {
-      const fullPath = path.join(dir, item.name);
-      const relativePath = path.relative(baseDir, fullPath);
-      
-      if (item.isDirectory()) {
-        return {
-          name: item.name,
-          type: 'folder',
-          path: relativePath,
-          children: getDirectoryStructure(fullPath, baseDir)
-        };
-      } else {
-        return {
-          name: item.name,
-          type: 'file',
-          path: relativePath
-        };
-      }
-    });
+  const IGNORED_DIRS = ['node_modules', '.git', 'dist', 'build', '.vscode', 'coverage'];
+  const MAX_DEPTH = 10;
+
+  const getDirectoryStructure = (dir, baseDir = dir, depth = 0) => {
+    if (depth > MAX_DEPTH) {
+      return [];
+    }
+
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      return items
+        .filter(item => !IGNORED_DIRS.includes(item.name))
+        .map(item => {
+          const fullPath = path.join(dir, item.name);
+          const relativePath = path.relative(baseDir, fullPath);
+
+          try {
+            if (item.isDirectory()) {
+              return {
+                name: item.name,
+                type: 'folder',
+                path: relativePath,
+                children: getDirectoryStructure(fullPath, baseDir, depth + 1)
+              };
+            } else {
+              return {
+                name: item.name,
+                type: 'file',
+                path: relativePath
+              };
+            }
+          } catch (err) {
+            console.warn(`Error processing ${fullPath}:`, err.message);
+            return null;
+          }
+        })
+        .filter(item => item !== null);
+    } catch (err) {
+      console.warn(`Error reading directory ${dir}:`, err.message);
+      return [];
+    }
   };
 
   try {
     const structure = getDirectoryStructure(PROJECT_ROOT);
     res.json({ success: true, structure });
   } catch (error) {
+    console.error('Project structure error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
