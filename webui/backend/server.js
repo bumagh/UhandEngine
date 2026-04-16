@@ -474,37 +474,34 @@ app.post('/api/pipeline/generate-code', async (req, res) => {
     const response = await aiService.chat([
       {
         role: 'system',
-        content: `You are a C code generator. Your task is to generate actual C source code files for UhandEngine.
+        content: `You are a JSON formatter. Your ONLY job is to format C code into a specific JSON structure.
 
-Based on the game design, create C code files that implement the game. Return the files in JSON format.
+You will receive C code and must return it in this exact JSON format:
+{"files":[{"path":"file.c","content":"C_CODE_HERE","type":"main"}]]
 
-Required JSON structure:
-{
-  "files": [
-    {
-      "path": "src/game.c",
-      "content": "#include <stdio.h>\\nint main() { return 0; }",
-      "type": "main"
-    }
-  ]
-}
-
-CRITICAL INSTRUCTIONS:
-1. Generate REAL C CODE, not game design JSON
-2. The "content" field must contain actual C source code as a string
-3. Include necessary #include statements for SDL2
-4. Create at least 2-3 files: main game file, scene file, and object file
-5. Escape all special characters in the C code (newlines as \\n, quotes as \\", backslashes as \\\\)
-6. Output ONLY the JSON object, no markdown, no explanations
-7. Start with { and end with }
-8. Ensure the JSON is valid and parseable` 
+RULES:
+- Return ONLY the JSON, no other text
+- No markdown code blocks (\`\`\`)
+- No explanations
+- Start with {
+- End with }
+- Escape newlines as \\n
+- Escape quotes as \\"
+- Escape backslashes as \\\\
+- The content field must be a valid JSON string containing the C code` 
       },
-      { role: 'user', content: `Generate C code files for this game design: ${JSON.stringify(design)}\n\nRequirements: ${requirements}\n\nGenerate REAL C CODE files with actual implementation.` }
+      {
+        role: 'user',
+        content: `Format this C code into JSON: Generate a simple ${design.game_type || 'game'} with SDL2. Create main.c with game loop, game.c with logic, and a header file. Requirements: ${requirements}
+
+Return the result as JSON with files array containing path, content (as escaped string), and type fields.`
+      }
     ]);
 
     console.log('AI code generation response:', response.content);
 
-    // Try to extract JSON from response
+    // Try to parse as JSON first
+    let codeData;
     let jsonStr = response.content;
 
     // Remove markdown code blocks if present
@@ -519,7 +516,6 @@ CRITICAL INSTRUCTIONS:
     console.log('Extracted JSON string length:', jsonStr.length);
     console.log('First 500 chars of extracted JSON:', jsonStr.substring(0, 500));
 
-    let codeData;
     try {
       codeData = JSON.parse(jsonStr);
       console.log('Parsed codeData keys:', Object.keys(codeData));
@@ -527,7 +523,47 @@ CRITICAL INSTRUCTIONS:
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
       console.error('Attempted to parse:', jsonStr);
-      throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`);
+
+      // If JSON parsing fails, try to extract markdown code blocks
+      console.log('Attempting to extract markdown code blocks...');
+      const codeBlockRegex = /```(?:c|h|makefile)?\s*([\s\S]*?)```/gi;
+      const matches = [...response.content.matchAll(codeBlockRegex)];
+
+      if (matches.length > 0) {
+        console.log(`Found ${matches.length} code blocks`);
+
+        // Try to extract file names from the content
+        const files = [];
+        const fileNameRegex = /\*\*([a-zA-Z0-9_]+\.[a-zA-Z]+)\*\*/g;
+        const fileNames = [...response.content.matchAll(fileNameRegex)].map(m => m[1]);
+
+        console.log('Extracted file names:', fileNames);
+
+        // If we have file names, use them; otherwise use defaults
+        const defaultNames = ['main.c', 'game.h', 'game.c', 'ui.h', 'ui.c', 'storage.h', 'storage.c', 'Makefile'];
+        const namesToUse = fileNames.length > 0 ? fileNames : defaultNames.slice(0, matches.length);
+
+        matches.forEach((match, index) => {
+          const code = match[1].trim();
+          const fileName = namesToUse[index] || `file_${index}.c`;
+          const ext = fileName.split('.').pop();
+          let type = 'code';
+          if (ext === 'h') type = 'header';
+          else if (ext === 'c') type = 'source';
+          else if (ext === 'makefile' || fileName === 'Makefile') type = 'build';
+
+          files.push({
+            path: fileName,
+            content: code,
+            type: type
+          });
+        });
+
+        codeData = { files };
+        console.log('Constructed codeData from markdown blocks:', codeData);
+      } else {
+        throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`);
+      }
     }
 
     // Validate code structure and provide defaults
