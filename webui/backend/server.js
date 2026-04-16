@@ -472,54 +472,58 @@ app.post('/api/pipeline/generate-code', async (req, res) => {
   try {
     // Generate code using AI
     const response = await aiService.chat([
-      { 
-        role: 'system', 
-        content: `You are a JSON data generator. Your ONLY task is to output valid JSON data.
+      {
+        role: 'system',
+        content: `You are a C code generator. Your task is to generate actual C source code files for UhandEngine.
 
-Generate game code for UhandEngine (C-based 2D game engine with SDL2) based on the design.
+Based on the game design, create C code files that implement the game. Return the files in JSON format.
 
-Return the code in JSON format with this exact structure:
+Required JSON structure:
 {
   "files": [
     {
       "path": "src/game.c",
-      "content": "// C code here",
+      "content": "#include <stdio.h>\\nint main() { return 0; }",
       "type": "main"
     }
   ]
 }
 
-CRITICAL RULES:
-1. Output ONLY the JSON object
-2. NO markdown code blocks (\`\`\`)
-3. NO explanations
-4. NO additional text
-5. Start your response with {
-6. End your response with }
-7. Ensure all JSON syntax is valid
-8. Escape special characters in C code properly (newlines, quotes, backslashes)
-9. The "content" field should contain the actual C code as a string` 
+CRITICAL INSTRUCTIONS:
+1. Generate REAL C CODE, not game design JSON
+2. The "content" field must contain actual C source code as a string
+3. Include necessary #include statements for SDL2
+4. Create at least 2-3 files: main game file, scene file, and object file
+5. Escape all special characters in the C code (newlines as \\n, quotes as \\", backslashes as \\\\)
+6. Output ONLY the JSON object, no markdown, no explanations
+7. Start with { and end with }
+8. Ensure the JSON is valid and parseable` 
       },
-      { role: 'user', content: `Generate game code JSON for this design: ${JSON.stringify(design)}\n\nRequirements: ${requirements}` }
+      { role: 'user', content: `Generate C code files for this game design: ${JSON.stringify(design)}\n\nRequirements: ${requirements}\n\nGenerate REAL C CODE files with actual implementation.` }
     ]);
 
     console.log('AI code generation response:', response.content);
 
     // Try to extract JSON from response
     let jsonStr = response.content;
-    
+
     // Remove markdown code blocks if present
     jsonStr = jsonStr.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-    
+
     // Try to find JSON object in the content
     const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       jsonStr = jsonMatch[0];
     }
 
+    console.log('Extracted JSON string length:', jsonStr.length);
+    console.log('First 500 chars of extracted JSON:', jsonStr.substring(0, 500));
+
     let codeData;
     try {
       codeData = JSON.parse(jsonStr);
+      console.log('Parsed codeData keys:', Object.keys(codeData));
+      console.log('codeData.files:', codeData.files);
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
       console.error('Attempted to parse:', jsonStr);
@@ -528,10 +532,15 @@ CRITICAL RULES:
 
     // Validate code structure and provide defaults
     if (!codeData.files || !Array.isArray(codeData.files)) {
+      console.warn('No files array in response, using empty array');
       codeData.files = [];
     }
 
     console.log('Generated code files:', codeData.files.length);
+    if (codeData.files.length > 0) {
+      console.log('First file path:', codeData.files[0].path);
+      console.log('First file content length:', codeData.files[0].content?.length);
+    }
 
     res.json({ 
       success: true, 
