@@ -643,6 +643,18 @@ app.post('/api/pipeline/compile', async (req, res) => {
 
     if (targetPlatform === 'web') {
       // Web platform - use Emscripten
+      // Check if Emscripten is installed
+      const { execSync } = require('child_process');
+      try {
+        execSync('emcc --version', { stdio: 'ignore' });
+      } catch (error) {
+        console.error('Emscripten not found');
+        return res.status(400).json({
+          success: false,
+          error: 'Emscripten (emcc) is not installed or not in PATH. Please install Emscripten SDK first.\n\nInstallation instructions:\n1. Download from: https://emscripten.org/docs/getting_started/downloads.html\n2. Follow the installation guide for your platform\n3. Activate the Emscripten environment: emsdk_env.bat (Windows) or source emsdk_env.sh (Linux/macOS)\n4. Verify installation: emcc --version'
+        });
+      }
+
       const isWindows = process.platform === 'win32';
       const emscriptenScript = path.join(pipelineDir, isWindows ? 'build-emscripten.bat' : 'build-emscripten.sh');
 
