@@ -690,6 +690,20 @@ app.post('/api/pipeline/compile', async (req, res) => {
 
       console.log('Executable found:', executable);
 
+      // Copy SDL2 DLL files to pipeline directory for runtime
+      const dllSourceDir = path.join(PROJECT_ROOT, 'bin', 'UhandEngine');
+      const dllFiles = ['SDL2.dll', 'SDL2_ttf.dll'];
+      dllFiles.forEach(dllFile => {
+        const src = path.join(dllSourceDir, dllFile);
+        const dest = path.join(pipelineDir, dllFile);
+        if (fs.existsSync(src)) {
+          fs.copyFileSync(src, dest);
+          console.log(`Copied ${dllFile} to ${pipelineDir}`);
+        } else {
+          console.warn(`DLL file not found: ${src}`);
+        }
+      });
+
       res.json({
         success: true,
         status: 'completed',
