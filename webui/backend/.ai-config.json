@@ -1,6 +1,0 @@
-{
-  "provider": "custom",
-  "apiKey": "sk-ant-oat01-7a6289a0bb9f35c6e29b704a9863fabcda93cb4b88d35bea186a3b974d49c4bc",
-  "model": "claude-sonnet-4-6",
-  "baseUrl": "https://gaccode.com/claudecode"
-}

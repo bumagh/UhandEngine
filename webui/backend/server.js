@@ -454,6 +454,101 @@ IMPORTANT RULES:
   }
 });
 
+app.post('/api/pipeline/generate-code', async (req, res) => {
+  const { design, requirements } = req.body;
+  
+  if (!design) {
+    return res.status(400).json({ success: false, error: 'Design is required' });
+  }
+
+  // Check if AI is configured
+  if (!aiService.isConfigured()) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'AI not configured. Please configure AI in Settings first.' 
+    });
+  }
+
+  try {
+    // Generate code using AI
+    const response = await aiService.chat([
+      { 
+        role: 'system', 
+        content: `You are a C game engine code generator for UhandEngine, a C-based 2D game engine with SDL2.
+
+Generate game code based on the design. Return the code in JSON format with this structure:
+{
+  "files": [
+    {
+      "path": "file path",
+      "content": "file content",
+      "type": "scene|object|component|main"
+    }
+  ]
+}
+
+IMPORTANT RULES:
+1. Output ONLY the JSON object
+2. NO markdown code blocks (\`\`\`)
+3. NO explanations
+4. NO additional text
+5. Start your response with {
+6. End your response with }
+7. Ensure all JSON syntax is valid
+8. Generate valid C code for UhandEngine` 
+      },
+      { role: 'user', content: `Generate game code for this design: ${JSON.stringify(design)}\n\nRequirements: ${requirements}` }
+    ]);
+
+    console.log('AI code generation response:', response.content);
+
+    // Try to extract JSON from response
+    let jsonStr = response.content;
+    
+    // Remove markdown code blocks if present
+    jsonStr = jsonStr.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+    
+    // Try to find JSON object in the content
+    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0];
+    }
+
+    let codeData;
+    try {
+      codeData = JSON.parse(jsonStr);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      console.error('Attempted to parse:', jsonStr);
+      throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`);
+    }
+
+    // Validate code structure and provide defaults
+    if (!codeData.files || !Array.isArray(codeData.files)) {
+      codeData.files = [];
+    }
+
+    console.log('Generated code files:', codeData.files.length);
+
+    res.json({ 
+      success: true, 
+      files: codeData.files 
+    });
+  } catch (error) {
+    console.error('Code generation error:', error);
+    
+    // Handle 429 rate limit errors
+    if (error.message.includes('429')) {
+      return res.status(429).json({ 
+        success: false, 
+        error: 'API rate limit exceeded. Please wait a moment and try again.' 
+      });
+    }
+    
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`UhandEngine WebUI Backend running on port ${PORT}`);

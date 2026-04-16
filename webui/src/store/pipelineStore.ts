@@ -62,6 +62,7 @@ export interface PipelineState {
   setRequirements: (requirements: string) => void
   setDesign: (design: GameDesign) => void
   addGeneratedFile: (file: GeneratedFile) => void
+  clearGeneratedFiles: () => void
   updateGeneratedFile: (path: string, content: string) => void
   setBuildStatus: (status: BuildStatus) => void
   setRunStatus: (status: RunStatus) => void
@@ -84,6 +85,7 @@ const initialState: PipelineState = {
   setRequirements: () => {},
   setDesign: () => {},
   addGeneratedFile: () => {},
+  clearGeneratedFiles: () => {},
   updateGeneratedFile: () => {},
   setBuildStatus: () => {},
   setRunStatus: () => {},
@@ -104,6 +106,8 @@ export const usePipelineStore = create<PipelineState>((set) => ({
   addGeneratedFile: (file) => set((state) => ({
     generatedFiles: [...state.generatedFiles, file]
   })),
+  
+  clearGeneratedFiles: () => set({ generatedFiles: [] }),
   
   updateGeneratedFile: (path, content) => set((state) => ({
     generatedFiles: state.generatedFiles.map(f => 

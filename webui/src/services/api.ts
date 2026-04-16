@@ -88,13 +88,6 @@ class ApiService {
     })
   }
 
-  async generateCode(prompt: string, context?: any): Promise<ApiResponse<{ code: string }>> {
-    return this.request('/ai/generate-code', {
-      method: 'POST',
-      body: JSON.stringify({ prompt, context }),
-    })
-  }
-
   async analyzeCode(code: string, context?: any): Promise<ApiResponse<{ analysis: string }>> {
     return this.request('/ai/analyze', {
       method: 'POST',
@@ -127,6 +120,13 @@ class ApiService {
     return this.request('/pipeline/design', {
       method: 'POST',
       body: JSON.stringify({ requirements }),
+    })
+  }
+
+  async generatePipelineCode(design: any, requirements: string): Promise<ApiResponse> {
+    return this.request('/pipeline/generate-code', {
+      method: 'POST',
+      body: JSON.stringify({ design, requirements }),
     })
   }
 }
