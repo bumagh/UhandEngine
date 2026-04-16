@@ -14,7 +14,6 @@ function GameDevPipeline() {
   const currentStage = usePipelineStore(state => state.currentStage)
   const pipelineId = usePipelineStore(state => state.pipelineId)
   const setPipelineId = usePipelineStore(state => state.setPipelineId)
-  const reset = usePipelineStore(state => state.reset)
 
   useEffect(() => {
     // Generate pipeline ID if not exists

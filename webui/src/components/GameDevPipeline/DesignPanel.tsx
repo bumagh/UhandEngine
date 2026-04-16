@@ -105,7 +105,7 @@ function DesignPanel() {
           <div className="bg-gray-800 rounded-lg p-6">
             <h3 className="text-lg font-medium text-white mb-3">场景设计</h3>
             <div className="space-y-3">
-              {design.scenes.map((scene, index) => (
+              {design.scenes.map((scene: any, index: number) => (
                 <div key={index} className="bg-gray-700 rounded-lg p-4">
                   <div className="font-medium text-white mb-2">{scene.name}</div>
                   <div className="text-sm text-gray-400 mb-2">{scene.description}</div>
@@ -121,7 +121,7 @@ function DesignPanel() {
           <div className="bg-gray-800 rounded-lg p-6">
             <h3 className="text-lg font-medium text-white mb-3">组件系统</h3>
             <div className="flex flex-wrap gap-2">
-              {design.components.map((component, index) => (
+              {design.components.map((component: string, index: number) => (
                 <span
                   key={index}
                   className="px-3 py-1 bg-primary-600/20 text-primary-400 rounded-full text-sm"
@@ -136,7 +136,7 @@ function DesignPanel() {
           <div className="bg-gray-800 rounded-lg p-6">
             <h3 className="text-lg font-medium text-white mb-3">功能特性</h3>
             <ul className="space-y-2">
-              {design.features.map((feature, index) => (
+              {design.features.map((feature: string, index: number) => (
                 <li key={index} className="flex items-start gap-2 text-gray-300">
                   <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                   {feature}

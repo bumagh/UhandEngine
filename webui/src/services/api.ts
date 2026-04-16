@@ -15,7 +15,7 @@ export interface EngineInfo {
   examples: string[]
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse {
   success: boolean
   error?: string
   // Data is directly on the response, not in a data property
@@ -23,10 +23,10 @@ export interface ApiResponse<T = any> {
 }
 
 class ApiService {
-  private async request<T>(
+  private async request(
     endpoint: string,
     options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
+  ): Promise<ApiResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
@@ -46,11 +46,11 @@ class ApiService {
     }
   }
 
-  async getProjectStructure(): Promise<ApiResponse<{ structure: FileNode[] }>> {
+  async getProjectStructure(): Promise<ApiResponse> {
     return this.request('/project/structure')
   }
 
-  async getFileContent(path: string): Promise<ApiResponse<{ content: string }>> {
+  async getFileContent(path: string): Promise<ApiResponse> {
     return this.request(`/file/content?path=${encodeURIComponent(path)}`)
   }
 
@@ -61,23 +61,23 @@ class ApiService {
     })
   }
 
-  async compileAndRun(exampleName: string): Promise<ApiResponse<{ output: string }>> {
+  async compileAndRun(exampleName: string): Promise<ApiResponse> {
     return this.request('/compile/run', {
       method: 'POST',
       body: JSON.stringify({ exampleName }),
     })
   }
 
-  async getEngineInfo(): Promise<ApiResponse<{ info: EngineInfo }>> {
+  async getEngineInfo(): Promise<ApiResponse> {
     return this.request('/engine/info')
   }
 
-  async healthCheck(): Promise<ApiResponse<{ status: string; timestamp: string }>> {
+  async healthCheck(): Promise<ApiResponse> {
     return this.request('/health')
   }
 
   // AI API methods
-  async getAIStatus(): Promise<ApiResponse<{ configured: boolean; provider: string }>> {
+  async getAIStatus(): Promise<ApiResponse> {
     return this.request('/ai/status')
   }
 
@@ -88,7 +88,7 @@ class ApiService {
     })
   }
 
-  async analyzeCode(code: string, context?: any): Promise<ApiResponse<{ analysis: string }>> {
+  async analyzeCode(code: string, context?: any): Promise<ApiResponse> {
     return this.request('/ai/analyze', {
       method: 'POST',
       body: JSON.stringify({ code, context }),
