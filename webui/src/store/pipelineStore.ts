@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export interface GameDesign {
   game_type: string
@@ -94,38 +95,52 @@ const initialState: PipelineState = {
   reset: () => {},
 }
 
-export const usePipelineStore = create<PipelineState>((set) => ({
-  ...initialState,
-  
-  setStage: (stage) => set({ currentStage: stage }),
-  
-  setRequirements: (requirements) => set({ requirements }),
-  
-  setDesign: (design) => set({ design }),
-  
-  addGeneratedFile: (file) => set((state) => ({
-    generatedFiles: [...state.generatedFiles, file]
-  })),
-  
-  clearGeneratedFiles: () => set({ generatedFiles: [] }),
-  
-  updateGeneratedFile: (path, content) => set((state) => ({
-    generatedFiles: state.generatedFiles.map(f => 
-      f.path === path ? { ...f, content } : f
-    )
-  })),
-  
-  setBuildStatus: (buildStatus) => set({ buildStatus }),
-  
-  setRunStatus: (runStatus) => set({ runStatus }),
-  
-  addFeedback: (feedback) => set((state) => ({
-    feedback: [...state.feedback, feedback]
-  })),
-  
-  addHistory: (history) => set((state) => ({
-    history: [...state.history, history]
-  })),
-  
-  reset: () => set(initialState),
-}))
+export const usePipelineStore = create<PipelineState>()(
+  persist(
+    (set) => ({
+      ...initialState,
+
+      setStage: (stage) => set({ currentStage: stage }),
+
+      setRequirements: (requirements) => set({ requirements }),
+
+      setDesign: (design) => set({ design }),
+
+      addGeneratedFile: (file) => set((state) => ({
+        generatedFiles: [...state.generatedFiles, file]
+      })),
+
+      clearGeneratedFiles: () => set({ generatedFiles: [] }),
+
+      updateGeneratedFile: (path, content) => set((state) => ({
+        generatedFiles: state.generatedFiles.map(f =>
+          f.path === path ? { ...f, content } : f
+        )
+      })),
+
+      setBuildStatus: (buildStatus) => set({ buildStatus }),
+
+      setRunStatus: (runStatus) => set({ runStatus }),
+
+      addFeedback: (feedback) => set((state) => ({
+        feedback: [...state.feedback, feedback]
+      })),
+
+      addHistory: (history) => set((state) => ({
+        history: [...state.history, history]
+      })),
+
+      reset: () => set(initialState),
+    }),
+    {
+      name: 'pipeline-storage',
+      partialize: (state) => ({
+        currentStage: state.currentStage,
+        requirements: state.requirements,
+        design: state.design,
+        generatedFiles: state.generatedFiles,
+        history: state.history,
+      }),
+    }
+  )
+)

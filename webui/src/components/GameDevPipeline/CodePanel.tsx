@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Code, Play, RefreshCw } from 'lucide-react'
 import { usePipelineStore } from '../../store/pipelineStore'
 import { apiService } from '../../services/api'
@@ -11,12 +11,15 @@ function CodePanel() {
   const addGeneratedFile = usePipelineStore(state => state.addGeneratedFile)
   const clearGeneratedFiles = usePipelineStore(state => state.clearGeneratedFiles)
   const setStage = usePipelineStore(state => state.setStage)
+  const hasGenerated = useRef(false)
 
   useEffect(() => {
-    if (generatedFiles.length === 0 && design) {
+    // Only auto-generate if: no files exist, design exists, and hasn't generated yet
+    if (generatedFiles.length === 0 && design && !hasGenerated.current) {
+      hasGenerated.current = true
       generateCode()
     }
-  }, [design])
+  }, [design, generatedFiles.length])
 
   const generateCode = async () => {
     if (!design) return
