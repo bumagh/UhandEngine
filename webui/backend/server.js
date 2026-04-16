@@ -654,6 +654,13 @@ app.post('/api/pipeline/compile', async (req, res) => {
           ? `set EMSDK=${emsdkPath} && set PATH=${emsdkPath};${emscriptenPath};%PATH% && cd "${pipelineDir}" && build-emscripten.bat`
           : `cd "${pipelineDir}" && bash build-emscripten.sh`;
       } else {
+        // Copy shell.html template to pipeline directory
+        const shellTemplatePath = path.join(PROJECT_ROOT, 'web', 'html_template', 'shell.html');
+        const shellDestPath = path.join(pipelineDir, 'shell.html');
+        if (fs.existsSync(shellTemplatePath) && !fs.existsSync(shellDestPath)) {
+          fs.copyFileSync(shellTemplatePath, shellDestPath);
+          console.log(`Copied shell.html template to ${pipelineDir}`);
+        }
         // Generate default Emscripten build script
         if (isWindows) {
           const emscriptenScriptContent = `@echo off
