@@ -485,7 +485,26 @@ app.post('/api/pipeline/save-files', async (req, res) => {
 
     // Write each file
     files.forEach(file => {
+      // Validate file path
+      if (!file.path || typeof file.path !== 'string') {
+        console.warn('Skipping invalid file: missing path');
+        return;
+      }
+      if (!file.content || typeof file.content !== 'string') {
+        console.warn(`Skipping invalid file: missing content for ${file.path}`);
+        return;
+      }
+
       const filePath = path.join(pipelineDir, file.path);
+      const resolvedPath = path.resolve(filePath);
+      const resolvedPipelineDir = path.resolve(pipelineDir);
+
+      // Prevent path traversal attacks
+      if (!resolvedPath.startsWith(resolvedPipelineDir)) {
+        console.error(`Path traversal detected: ${file.path}`);
+        throw new Error(`Invalid file path: path traversal detected`);
+      }
+
       const dir = path.dirname(filePath);
 
       // Create directory if it doesn't exist
