@@ -621,8 +621,9 @@ app.post('/api/pipeline/compile', async (req, res) => {
         }
       }
 
-      // Auto-fix Linux font paths to Windows font paths
-      if (process.platform === 'win32') {
+      // Auto-fix Linux font paths to Windows font paths (only for Windows platform)
+      // Skip for Web platform to preserve #ifdef __EMSCRIPTEN__ conditional compilation
+      if (process.platform === 'win32' && targetPlatform !== 'web') {
         content = content.replace(
           /\/usr\/share\/fonts\/truetype\/dejavu\/DejaVuSans-Bold\.ttf/g,
           'C:\\\\Windows\\\\Fonts\\\\arial.ttf'
