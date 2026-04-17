@@ -1089,6 +1089,93 @@ app.get('/api/pipeline/web-server-logs', (req, res) => {
   }
 });
 
+// Engine Test API
+app.post('/api/engine/test', async (req, res) => {
+  const { platform } = req.body;
+
+  if (!platform || (platform !== 'native' && platform !== 'web')) {
+    return res.status(400).json({ success: false, error: 'Platform must be "native" or "web"' });
+  }
+
+  const projectRoot = path.resolve(__dirname, '../..');
+  const srcDir = path.join(projectRoot, 'src');
+
+  try {
+    let command, cwd;
+    let output = '';
+
+    if (platform === 'native') {
+      // Native platform test
+      cwd = srcDir;
+      command = process.platform === 'win32' ? 'make' : 'make';
+
+      output += `Compiling for Native platform...\n`;
+      await new Promise((resolve, reject) => {
+        exec(command, { cwd }, (error, stdout, stderr) => {
+          if (error) {
+            output += `Compilation failed: ${stderr}\n`;
+            reject(error);
+          } else {
+            output += `Compilation successful\n`;
+            output += stdout;
+            resolve(stdout);
+          }
+        });
+      });
+
+      // Run the executable
+      const exePath = process.platform === 'win32' 
+        ? path.join(projectRoot, 'bin', 'UhandEngine', 'UhandEngine.exe')
+        : path.join(projectRoot, 'bin', 'UhandEngine', 'UhandEngine');
+
+      output += `Running executable...\n`;
+      await new Promise((resolve, reject) => {
+        exec(`"${exePath}"`, { cwd: projectRoot, timeout: 5000 }, (error, stdout, stderr) => {
+          output += stdout;
+          if (stderr) output += stderr;
+          if (error && error.signal !== 'SIGTERM') {
+            reject(error);
+          } else {
+            resolve(stdout);
+          }
+        });
+      });
+
+      output += `Native test completed\n`;
+      return res.json({ success: true, output });
+
+    } else if (platform === 'web') {
+      // Web platform test
+      cwd = srcDir;
+      command = 'make emcc';
+
+      output += `Compiling for Web platform...\n`;
+      await new Promise((resolve, reject) => {
+        exec(command, { cwd }, (error, stdout, stderr) => {
+          if (error) {
+            output += `Compilation failed: ${stderr}\n`;
+            reject(error);
+          } else {
+            output += `Compilation successful\n`;
+            output += stdout;
+            resolve(stdout);
+          }
+        });
+      });
+
+      output += `Web test completed. Open http://localhost:8080/index.html to view\n`;
+      return res.json({ success: true, output, webUrl: 'http://localhost:8080/index.html' });
+    }
+
+  } catch (error) {
+    console.error('Engine test error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      output: `Test failed: ${error.message}` 
+    });
+  }
+});
+
 app.post('/api/pipeline/generate-code', async (req, res) => {
   const { design, requirements, platform } = req.body;
 

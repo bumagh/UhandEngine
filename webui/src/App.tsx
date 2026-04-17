@@ -4,10 +4,11 @@ import AIAssistant from './components/AIAssistant'
 import CodeEditor from './components/CodeEditor'
 import Settings from './components/Settings'
 import GameDevPipeline from './components/GameDevPipeline/GameDevPipeline'
-import { Layout, Menu, Code, Settings as SettingsIcon, Zap } from 'lucide-react'
+import EngineTest from './components/EngineTest'
+import { Layout, Menu, Code, Settings as SettingsIcon, Zap, Cpu } from 'lucide-react'
 
 function App() {
-  const [activePanel, setActivePanel] = useState<'project' | 'ai' | 'editor' | 'settings' | 'pipeline'>('project')
+  const [activePanel, setActivePanel] = useState<'project' | 'ai' | 'editor' | 'settings' | 'pipeline' | 'engine'>('project')
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
@@ -58,6 +59,15 @@ function App() {
         >
           <Zap className="w-6 h-6" />
         </button>
+        <button
+          onClick={() => setActivePanel('engine')}
+          className={`p-3 rounded-lg transition-colors ${
+            activePanel === 'engine' ? 'bg-primary-600' : 'hover:bg-gray-700'
+          }`}
+          title="Engine Test"
+        >
+          <Cpu className="w-6 h-6" />
+        </button>
       </div>
 
       {/* Main Content */}
@@ -67,6 +77,7 @@ function App() {
         {activePanel === 'editor' && <CodeEditor />}
         {activePanel === 'settings' && <Settings />}
         {activePanel === 'pipeline' && <GameDevPipeline />}
+        {activePanel === 'engine' && <EngineTest />}
       </div>
     </div>
   )
