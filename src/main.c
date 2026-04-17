@@ -24,6 +24,7 @@
 #include "./engine/list.h"
 #include "./engine/gameObject.h"
 #include "./engine/Scene.h"
+#include "./engine/SpriteComponent.h"
 int w, h;
 #define SDL_DELAY 12
 #define FRAMERATE 30
@@ -226,6 +227,24 @@ void gameInit()
     printf("  Child1: %s\n", child1->name);
     printf("    Grandchild: %s\n", grandchild->name);
     printf("  Child2: %s\n", child2->name);
+
+    // 渲染测试：创建简单纹理
+    SDL_Texture *testTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 100, 100);
+    if (testTexture != NULL)
+    {
+        SDL_SetRenderTarget(renderer, testTexture);
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // 红色
+        SDL_RenderClear(renderer);
+        SDL_SetRenderTarget(renderer, NULL);
+
+        // 为 child1 添加 SpriteComponent
+        SpriteComponent *sprite = SpriteComponent_Create(testTexture, 100, 100);
+        if (sprite != NULL)
+        {
+            addComponent(child1, (Component *)sprite);
+            printf("渲染测试：为 Child1 添加 SpriteComponent\n");
+        }
+    }
 
     // 调用 Scene 生命周期函数
     Scene_Awake(mainScene);
