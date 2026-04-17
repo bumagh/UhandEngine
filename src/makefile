@@ -18,7 +18,7 @@ WEB_PATH=../web
 all: $(BINARIES)
 
 UhandEngine: $(OBJECTS)
-	$(CC) -o $(BINARIES_PATH)/$(BINARIES) $(OBJECTS) $(CFLAGS) $(SFLAGS) $(FONTS_FLAGS) ${MIXER_FLAGS}
+	$(CC) -o $(BINARIES_PATH)/$(BINARIES) $(OBJECTS) $(CFLAGS) $(SFLAGS) $(FONTS_FLAGS) ${MIXER_FLAGS} ${IMAGE_FLAGS}
 
 %.o: %.c
 	$(CC) -c $^  $(CFLAGS) $(SFLAGS) $(FONTS_FLAGS) ${MIXER_FLAGS} -o $@
@@ -26,7 +26,7 @@ UhandEngine: $(OBJECTS)
 
 .PHONY:emclean clean emcc emccd emrun emre
 emcc: $(SOURCES)
-	$(EMCC) $(SOURCES) -Wno-int-conversion -Wno-implicit-function-declaration -Wno-incompatible-function-pointer-types  -s USE_SDL=2 -s USE_SDL_TTF=2 -s WASM=1  -s USE_SDL_MIXER=2  -s USE_OGG=1 -s USE_VORBIS=1 -s ALLOW_MEMORY_GROWTH=1  -o $(WEB_PATH)/$(BINARIES)/index.html --preload-file assets -std=c99 -s --shell-file $(WEB_PATH)/html_template/shell.html
+	$(EMCC) $(SOURCES) -Wno-int-conversion -Wno-implicit-function-declaration -Wno-incompatible-function-pointer-types  -s USE_SDL=2 -s USE_SDL_TTF=2 -s USE_SDL_IMAGE=2 -s WASM=1  -s USE_SDL_MIXER=2  -s USE_OGG=1 -s USE_VORBIS=1 -s ALLOW_MEMORY_GROWTH=1  -o $(WEB_PATH)/$(BINARIES)/index.html --preload-file assets -std=c99 -s --shell-file $(WEB_PATH)/html_template/shell.html
 emccd: $(SOURCES)
 	$(EMCC) $(SOURCES) -Wno-int-conversion -Wno-implicit-function-declaration -Wno-incompatible-function-pointer-types  -s USE_SDL=2 -s USE_SDL_TTF=2 -s WASM=1  -s USE_SDL_MIXER=2  -s USE_OGG=1 -s USE_VORBIS=1 -s ALLOW_MEMORY_GROWTH=1  -o $(WEB_PATH)/$(BINARIES)/index.html --preload-file assets -std=c99
 emrun:
