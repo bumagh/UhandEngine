@@ -724,19 +724,26 @@ emcc game.c main.c \\
   -o game.html \\
   --shell-file shell.html \\
   --preload-file simhei.ttf \\
+  --preload-file arial.ttf \\
   -std=c99
 
 echo "Build complete! Open game.html in a browser."
 `;
           fs.writeFileSync(emscriptenScript, emscriptenScriptContent, 'utf8');
           
-          // Copy font file for Web platform (SimHei for Chinese/English support)
-          const fontSrc = 'C:\\Windows\\Fonts\\simhei.ttf';
-          const fontDest = path.join(pipelineDir, 'simhei.ttf');
-          if (fs.existsSync(fontSrc) && !fs.existsSync(fontDest)) {
-            fs.copyFileSync(fontSrc, fontDest);
-            console.log(`Copied font file to ${fontDest}`);
-          }
+          // Copy font files for Web platform (SimHei for Chinese, Arial for English)
+          const fontFiles = [
+            { src: 'C:\\Windows\\Fonts\\simhei.ttf', dest: 'simhei.ttf' },
+            { src: 'C:\\Windows\\Fonts\\arial.ttf', dest: 'arial.ttf' }
+          ];
+          fontFiles.forEach(fontFile => {
+            const fontSrc = fontFile.src;
+            const fontDest = path.join(pipelineDir, fontFile.dest);
+            if (fs.existsSync(fontSrc) && !fs.existsSync(fontDest)) {
+              fs.copyFileSync(fontSrc, fontDest);
+              console.log(`Copied font file to ${fontDest}`);
+            }
+          });
           
           buildCommand = `cd "${pipelineDir}" && bash build-emscripten.sh`;
         }
@@ -1135,8 +1142,10 @@ CRITICAL Web platform requirements:
 - Use SDL2 flags: -s USE_SDL=2 -s USE_SDL_TTF=2 -s WASM=1 -s ASYNCIFY=1
 - Output should be game.html
 - Include shell.html template for web canvas
-- For font loading: use NULL for TTF_OpenFont (SDL2 default font)
+- For font loading: preload simhei.ttf (Chinese support) and arial.ttf via --preload-file
 - Use #ifdef __EMSCRIPTEN__ to conditionally set font path
+- For Chinese text rendering: use TTF_RenderUTF8_Solid instead of TTF_RenderText_Solid
+- UTF-8 encoding is required for Chinese character support
 ` : `
 For Windows platform:
 - Generate a build.bat script (not Makefile or CMakeLists.txt)
@@ -1160,8 +1169,10 @@ ${isWeb ? `
 IMPORTANT: Generate build-emscripten.sh script with emcc compilation flags.
 The script should compile to game.html using -s USE_SDL=2 -s USE_SDL_TTF=2 -s WASM=1 -s ASYNCIFY=1.
 Include a shell.html template for web canvas rendering.
-For font loading: use NULL for TTF_OpenFont (SDL2 default font).
+For font loading: preload simhei.ttf (Chinese support) and arial.ttf via --preload-file.
 Use #ifdef __EMSCRIPTEN__ to conditionally set font path.
+For Chinese text rendering: use TTF_RenderUTF8_Solid instead of TTF_RenderText_Solid.
+UTF-8 encoding is required for Chinese character support.
 ` : `
 IMPORTANT: main.c must start with #define SDL_MAIN_HANDLED before any includes.
 The first line inside main() must call SDL_SetMainReady().
