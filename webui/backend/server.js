@@ -1100,19 +1100,21 @@ CRITICAL Windows main.c requirements:
 - The first line inside main() MUST be: SDL_SetMainReady();
 - This is REQUIRED to prevent "undefined reference to WinMain" linker error on Windows
 
-CRITICAL Windows font requirements:
-- Use Windows system fonts, NOT Linux paths
-- For TTF_OpenFont, use: "C:\\Windows\\Fonts\\arial.ttf" or "C:\\Windows\\Fonts\\tahoma.ttf"
-- Or use NULL to let SDL2 choose a default font
+CRITICAL font requirements:
+- For Web platform: use NULL for TTF_OpenFont (SDL2 will use default font)
+- For Windows platform: use "C:\\Windows\\Fonts\\arial.ttf" or "C:\\Windows\\Fonts\\tahoma.ttf"
+- Use #ifdef __EMSCRIPTEN__ to conditionally set font path
 - NEVER use Linux paths like /usr/share/fonts/
 
 ${isWeb ? `
 CRITICAL Web platform requirements:
 - Generate build-emscripten.sh for Emscripten compilation
 - build-emscripten.sh must use emcc to compile to WebAssembly
-- Use SDL2 flags: -s USE_SDL=2 -s USE_SDL_TTF=2 -s WASM=1
+- Use SDL2 flags: -s USE_SDL=2 -s USE_SDL_TTF=2 -s WASM=1 -s ASYNCIFY=1
 - Output should be game.html
 - Include shell.html template for web canvas
+- For font loading: use NULL for TTF_OpenFont (SDL2 default font)
+- Use #ifdef __EMSCRIPTEN__ to conditionally set font path
 ` : `
 For Windows platform:
 - Generate a build.bat script (not Makefile or CMakeLists.txt)
@@ -1134,8 +1136,10 @@ Target platform: ${isWeb ? 'Web (Emscripten)' : 'Windows'}
 
 ${isWeb ? `
 IMPORTANT: Generate build-emscripten.sh script with emcc compilation flags.
-The script should compile to game.html using -s USE_SDL=2 -s USE_SDL_TTF=2 -s WASM=1.
+The script should compile to game.html using -s USE_SDL=2 -s USE_SDL_TTF=2 -s WASM=1 -s ASYNCIFY=1.
 Include a shell.html template for web canvas rendering.
+For font loading: use NULL for TTF_OpenFont (SDL2 default font).
+Use #ifdef __EMSCRIPTEN__ to conditionally set font path.
 ` : `
 IMPORTANT: main.c must start with #define SDL_MAIN_HANDLED before any includes.
 The first line inside main() must call SDL_SetMainReady().
