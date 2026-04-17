@@ -630,8 +630,13 @@ app.post('/api/pipeline/compile', async (req, res) => {
             /TTF_OpenFont\s*\(\s*["']\/usr\/share\/fonts\/[^"']+["']\s*,/g,
             'TTF_OpenFont("simhei.ttf",'
           );
+          // Replace TTF_RenderText_Solid with TTF_RenderUTF8_Solid for Chinese support
+          content = content.replace(
+            /TTF_RenderText_Solid/g,
+            'TTF_RenderUTF8_Solid'
+          );
           if (content !== file.content) {
-            console.log(`Fixed Linux font paths to simhei.ttf for Web platform in ${file.path}`);
+            console.log(`Fixed Linux font paths and UTF-8 rendering for Web platform in ${file.path}`);
           }
         } else {
           content = content.replace(
