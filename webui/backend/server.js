@@ -6,6 +6,9 @@ const fs = require('fs');
 const { exec } = require('child_process');
 require('dotenv').config();
 
+// Store active Web server instances
+const webServers = new Map(); // pipelineId -> { server, port, logs: [] }
+
 const AIService = require('./ai-service');
 
 // Load saved AI config from file if exists
@@ -930,33 +933,62 @@ app.post('/api/pipeline/run', async (req, res) => {
       const path = require('path');
 
       const port = 18082;
+      const logs = [];
+
+      // Stop existing server for this pipeline if any
+      if (webServers.has(pipelineId)) {
+        const existing = webServers.get(pipelineId);
+        existing.server.close();
+        webServers.delete(pipelineId);
+        console.log(`Stopped existing Web server for pipeline ${pipelineId}`);
+      }
+
       const server = http.createServer((req, res) => {
+        const timestamp = new Date().toISOString();
+        const logEntry = `[${timestamp}] ${req.method} ${req.url}`;
+        logs.push(logEntry);
+        console.log(logEntry);
+
         let filePath = path.join(pipelineDir, req.url === '/' ? 'game.html' : req.url);
         if (!fs.existsSync(filePath)) {
           filePath = targetExecutable;
         }
 
         const extname = path.extname(filePath);
+        const isBinary = ['.wasm', '.data'].includes(extname);
         const contentType = {
           '.html': 'text/html',
           '.js': 'text/javascript',
-      '.wasm': 'application/wasm',
+          '.wasm': 'application/wasm',
+          '.data': 'application/octet-stream',
           '.css': 'text/css'
         }[extname] || 'application/octet-stream';
 
         fs.readFile(filePath, (err, content) => {
           if (err) {
+            const errorLog = `[${timestamp}] Error serving ${req.url}: ${err.message}`;
+            logs.push(errorLog);
+            console.error(errorLog);
             res.writeHead(500);
             res.end('Server Error');
             return;
           }
           res.writeHead(200, { 'Content-Type': contentType });
-          res.end(content, 'utf-8');
+          if (isBinary) {
+            res.end(content);
+          } else {
+            res.end(content, 'utf-8');
+          }
         });
       });
 
       server.listen(port, () => {
-        console.log(`Web server started on port ${port}`);
+        const startLog = `[${new Date().toISOString()}] Web server started on port ${port}`;
+        logs.push(startLog);
+        console.log(startLog);
+
+        webServers.set(pipelineId, { server, port, logs });
+
         res.json({
           success: true,
           status: 'completed',
@@ -981,6 +1013,41 @@ app.post('/api/pipeline/run', async (req, res) => {
       success: false,
       error: error.message
     });
+  }
+});
+
+// Stop Web server
+app.post('/api/pipeline/stop-web-server', (req, res) => {
+  const { pipelineId } = req.body;
+
+  if (!pipelineId) {
+    return res.status(400).json({ success: false, error: 'Pipeline ID is required' });
+  }
+
+  if (webServers.has(pipelineId)) {
+    const webServer = webServers.get(pipelineId);
+    webServer.server.close();
+    webServers.delete(pipelineId);
+    console.log(`Stopped Web server for pipeline ${pipelineId}`);
+    res.json({ success: true, message: 'Web server stopped' });
+  } else {
+    res.status(404).json({ success: false, error: 'No active Web server for this pipeline' });
+  }
+});
+
+// Get Web server logs
+app.get('/api/pipeline/web-server-logs', (req, res) => {
+  const { pipelineId } = req.query;
+
+  if (!pipelineId) {
+    return res.status(400).json({ success: false, error: 'Pipeline ID is required' });
+  }
+
+  if (webServers.has(pipelineId)) {
+    const webServer = webServers.get(pipelineId);
+    res.json({ success: true, logs: webServer.logs });
+  } else {
+    res.status(404).json({ success: false, error: 'No active Web server for this pipeline' });
   }
 });
 
