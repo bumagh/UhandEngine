@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Play, ArrowLeft, RefreshCw, Terminal, Hammer, Monitor, Globe } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Play, ArrowLeft, RefreshCw, Terminal, Hammer, Monitor, Globe, Square } from 'lucide-react'
 import { usePipelineStore } from '../../store/pipelineStore'
 import { apiService } from '../../services/api'
 
@@ -17,6 +17,7 @@ function BuildPanel() {
   const [runStatus, setRunStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
   const [executable, setExecutable] = useState('')
   const [webUrl, setWebUrl] = useState('')
+  const logIntervalRef = useRef<number | null>(null)
 
   const handleCompile = async () => {
     if (generatedFiles.length === 0) {
@@ -85,6 +86,8 @@ function BuildPanel() {
         setRunStatus('success')
         if (platform === 'web' && response.url) {
           setWebUrl(response.url)
+          // Start polling for Web server logs
+          startLogPolling()
         }
         addHistory({
           id: Date.now().toString(),
@@ -103,9 +106,62 @@ function BuildPanel() {
       setRunOutput('运行失败：' + errorMessage)
       setRunStatus('error')
     } finally {
-      setRunning(false)
+      if (platform !== 'web') {
+        setRunning(false)
+      }
     }
   }
+
+  const handleStopWebServer = async () => {
+    if (!pipelineId) return
+
+    try {
+      const response = await apiService.stopWebServer(pipelineId)
+      if (response.success) {
+        stopLogPolling()
+        setRunning(false)
+        setRunStatus('idle')
+        setWebUrl('')
+        setRunOutput('Web server stopped')
+      } else {
+        setRunOutput('Failed to stop Web server: ' + (response.error || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Stop Web server error:', error)
+      const errorMessage = error instanceof Error ? error.message : '未知错误'
+      setRunOutput('停止失败：' + errorMessage)
+    }
+  }
+
+  const startLogPolling = () => {
+    if (logIntervalRef.current) {
+      clearInterval(logIntervalRef.current)
+    }
+    logIntervalRef.current = window.setInterval(async () => {
+      if (!pipelineId) return
+      try {
+        const response = await apiService.getWebServerLogs(pipelineId)
+        if (response.success && response.logs) {
+          setRunOutput(response.logs.join('\n'))
+        }
+      } catch (error) {
+        console.error('Failed to fetch Web server logs:', error)
+      }
+    }, 2000)
+  }
+
+  const stopLogPolling = () => {
+    if (logIntervalRef.current) {
+      clearInterval(logIntervalRef.current)
+      logIntervalRef.current = null
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      stopLogPolling()
+    }
+  }, [])
 
   const handleBack = () => {
     setStage('preview')
@@ -188,23 +244,33 @@ function BuildPanel() {
                 </>
               )}
             </button>
-            <button
-              onClick={handleRun}
-              disabled={running || buildStatus !== 'success'}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {running ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  运行中...
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4" />
-                  运行
-                </>
-              )}
-            </button>
+            {platform === 'web' && running ? (
+              <button
+                onClick={handleStopWebServer}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <Square className="w-4 h-4" />
+                停止
+              </button>
+            ) : (
+              <button
+                onClick={handleRun}
+                disabled={running || buildStatus !== 'success'}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {running ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    运行中...
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4" />
+                    运行
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

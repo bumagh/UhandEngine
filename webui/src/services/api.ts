@@ -151,6 +151,19 @@ class ApiService {
     })
   }
 
+  async stopWebServer(pipelineId: string): Promise<ApiResponse> {
+    return this.request('/pipeline/stop-web-server', {
+      method: 'POST',
+      body: JSON.stringify({ pipelineId }),
+    })
+  }
+
+  async getWebServerLogs(pipelineId: string): Promise<ApiResponse> {
+    return this.request(`/pipeline/web-server-logs?pipelineId=${pipelineId}`, {
+      method: 'GET',
+    })
+  }
+
   async compileAndRunPipeline(pipelineId: string, files: any[]): Promise<ApiResponse> {
     return this.request('/pipeline/compile-run', {
       method: 'POST',
