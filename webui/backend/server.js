@@ -723,11 +723,21 @@ emcc game.c main.c \\
   -I../../include \\
   -o game.html \\
   --shell-file shell.html \\
+  --preload-file arial.ttf \\
   -std=c99
 
 echo "Build complete! Open game.html in a browser."
 `;
           fs.writeFileSync(emscriptenScript, emscriptenScriptContent, 'utf8');
+          
+          // Copy font file for Web platform
+          const fontSrc = 'C:\\Windows\\Fonts\\arial.ttf';
+          const fontDest = path.join(pipelineDir, 'arial.ttf');
+          if (fs.existsSync(fontSrc) && !fs.existsSync(fontDest)) {
+            fs.copyFileSync(fontSrc, fontDest);
+            console.log(`Copied font file to ${fontDest}`);
+          }
+          
           buildCommand = `cd "${pipelineDir}" && bash build-emscripten.sh`;
         }
       }
