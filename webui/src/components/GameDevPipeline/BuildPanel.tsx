@@ -16,6 +16,7 @@ function BuildPanel() {
   const [buildStatus, setBuildStatus] = useState<'idle' | 'building' | 'success' | 'error'>('idle')
   const [runStatus, setRunStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
   const [executable, setExecutable] = useState('')
+  const [webUrl, setWebUrl] = useState('')
 
   const handleCompile = async () => {
     if (generatedFiles.length === 0) {
@@ -82,6 +83,9 @@ function BuildPanel() {
       if (response.success) {
         setRunOutput(response.output || 'Run completed')
         setRunStatus('success')
+        if (platform === 'web' && response.url) {
+          setWebUrl(response.url)
+        }
         addHistory({
           id: Date.now().toString(),
           timestamp: new Date(),
@@ -249,6 +253,19 @@ function BuildPanel() {
           <pre className="flex-1 bg-gray-900 text-gray-300 p-4 text-sm overflow-auto font-mono">
             {runOutput || '点击"运行"开始运行'}
           </pre>
+          {platform === 'web' && webUrl && (
+            <div className="px-4 py-2 bg-gray-800 border-t border-gray-700">
+              <a
+                href={webUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              >
+                <Globe className="w-4 h-4" />
+                在新标签打开预览
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>
