@@ -21,6 +21,11 @@
 - 当前 Web 页面已具备最小菜单场景与点击交互
 - AI API 已通过本地脚本接入
 - 已有 Scene Schema 示例与 AI 输出映射说明
+- **第1周架构重构已完成**：
+  - Scene 已使用 rootObject 替代 GameObjectList
+  - GameObject 已使用父子关系（firstChild/nextSibling）替代链表
+  - 平台层已抽象（platform.h/platform.c）
+  - main.c 已适配新的 Scene 结构
 - 当前主要问题不是“功能完全没有”，而是“架构仍偏原型，离可持续发布还有距离”
 
 ## 3. 最高优先级原则
@@ -61,16 +66,22 @@ SWE1.6 的中期目标不是做完整引擎，而是在当前源码基础上完�
 - 给 `Scene` 一个更明确的运行时责任
 - 为后续示例接入建立稳定入口
 
+**注意：第1周架构重构已完成以下内容：**
+- Scene 已使用 rootObject 替代 GameObjectList
+- GameObject 已使用父子关系（firstChild/nextSibling）替代链表
+- 平台层已抽象（platform.h/platform.c）
+- main.c 已适配新的 Scene 结构
+
 SWE1.6 在本阶段优先做：
 
-- 识别 `main.c` 中与启动、循环、场景 demo、UI demo 相关的职责
-- 保留 `main.c` 作为平台入口，但把示例逻辑尽量移入更清晰的模块边界
-- 为“当前场景”建立最小 owner 概念
+- 利用已建立的 Scene-first 架构
+- 将 main.c 中剩余的 demo 逻辑迁移到 Scene
+- 为"当前场景"建立最小 owner 概念
 - 保证现有 Web MVP 不回退
 
 本阶段不要做：
 
-- 完整 Scene 系统重写
+- 完整 Scene 系统重写（已部分完成）
 - 完整事件系统重写
 - 完整资源系统重写
 
