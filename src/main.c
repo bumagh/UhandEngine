@@ -207,12 +207,29 @@ void gameInit()
         return;
     }
 
+    // 测试 Scene-first 架构：创建 GameObject 层次结构
+    GameObject *rootObj = createGameObject("RootObject");
+    GameObject *child1 = createGameObject("Child1");
+    GameObject *child2 = createGameObject("Child2");
+    GameObject *grandchild = createGameObject("Grandchild");
+
+    // 构建层次结构：root -> child1 -> grandchild
+    addChild(rootObj, child1);
+    addChild(rootObj, child2);
+    addChild(child1, grandchild);
+
+    // 设置 Scene 的 rootObject
+    mainScene->rootObject = rootObj;
+
+    printf("Scene-first 架构测试：\n");
+    printf("RootObject: %s\n", rootObj->name);
+    printf("  Child1: %s\n", child1->name);
+    printf("    Grandchild: %s\n", grandchild->name);
+    printf("  Child2: %s\n", child2->name);
+
     // 调用 Scene 生命周期函数
     Scene_Awake(mainScene);
     Scene_Start(mainScene);
-
-    // TODO: 使用 GameObject 替代 UIComponent 创建游戏对象
-    // 当前为简化版本，后续会添加 GameObject 创建逻辑
 }
 void loop()
 {
