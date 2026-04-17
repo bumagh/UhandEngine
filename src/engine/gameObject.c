@@ -25,14 +25,14 @@ GameObject *createGameObjectWithType(const char *name, GameObjectType type)
         printf("Failed to allocate memory for UUID\n");
     }
     go->components = NULL; // 初始化为空链表
-    go->next = NULL;
+    go->firstChild = NULL; // 初始化为空子对象链表
+    go->nextSibling = NULL; // 初始化为空兄弟链表
 
     // 初始化 2D 基础属性
     go->visible = 1;    // 默认可见
     go->active = 1;     // 默认激活
     go->depth = 0;      // 默认层级
     go->parent = NULL;  // 默认无父对象
-    go->children = NULL; // 默认无子对象
 
     // 生命周期函数初始化
     go->Awake = NULL;
@@ -101,33 +101,35 @@ void updateTransform(Component *comp)
 
 void freeGameObject(GameObject *go)
 {
+    if (go == NULL)
+        return;
 
     // 释放组件链表
     Component *current = go->components;
     while (current != NULL)
     {
         Component *next = current->next;
-        if (current->free != NULL)
-            current->free(current);
+        if (current->destroy != NULL)
+            current->destroy(current);
         current = next;
     }
     // printf("freeGameObject quit 1\n");
 
-    free(go->name); // 释放 GameObject 名称
+    free((void *)go->name); // 释放 GameObject 名称
     // printf("freeGameObject quit 2\n");
 
-    free(go->id); // 释放 GameObject 名称
+    free((void *)go->id); // 释放 GameObject 名称
     // printf("freeGameObject quit 3\n");
 
     go->components = NULL;
-    go->next = NULL;
+    go->firstChild = NULL;
+    go->nextSibling = NULL;
     go->Awake = NULL;
     go->Start = NULL;
     go->Update = NULL;
     go->LateUpdate = NULL;
     go->FixedUpdate = NULL;
     go->Destroy = NULL;
-    go->free = NULL;
     go->getComponent = NULL;
     go->render = NULL;
     free(go); // 释放 GameObject
@@ -253,8 +255,8 @@ void addChild(struct GameObject *parent, struct GameObject *child)
     child->parent = parent;
 
     // 将子对象添加到父对象的子对象链表头部
-    child->next = parent->children;
-    parent->children = child;
+    child->nextSibling = parent->firstChild;
+    parent->firstChild = child;
 }
 
 void removeChild(struct GameObject *parent, struct GameObject *child)
@@ -265,7 +267,7 @@ void removeChild(struct GameObject *parent, struct GameObject *child)
     }
 
     // 从父对象的子对象链表中移除
-    GameObject *current = parent->children;
+    GameObject *current = parent->firstChild;
     GameObject *prev = NULL;
 
     while (current != NULL)
@@ -275,21 +277,21 @@ void removeChild(struct GameObject *parent, struct GameObject *child)
             if (prev == NULL)
             {
                 // 移除的是头节点
-                parent->children = child->next;
+                parent->firstChild = child->nextSibling;
             }
             else
             {
-                prev->next = child->next;
+                prev->nextSibling = child->nextSibling;
             }
             break;
         }
         prev = current;
-        current = current->next;
+        current = current->nextSibling;
     }
 
     // 清除子对象的父对象引用
     child->parent = NULL;
-    child->next = NULL;
+    child->nextSibling = NULL;
 }
 
 // 属性管理

@@ -9,7 +9,7 @@ IMAGE_FLAGS=-lSDL2_image -L$(SDL2_LIB_PATH)/SDL2_image_2.6.3
 MIXER_FLAGS=-lSDL2_mixer -L$(SDL2_LIB_PATH)/SDL2_mixer_2.6.3
 
 
-SOURCES = $(wildcard ./*.c)  $(wildcard ./engine/*.c) $(wildcard ./engine/UI/*.c)
+SOURCES = $(filter-out ./engine/gameObjectList.c ./engine/uiComponent.c, $(wildcard ./*.c)  $(wildcard ./engine/*.c) $(wildcard ./engine/UI/*.c))
 OBJECTS=$(SOURCES:.c=.o)
 BINARIES=UhandEngine
 BINARIES_PATH=../bin/$(BINARIES)

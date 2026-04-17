@@ -8,7 +8,7 @@ void TextComponent_init(TextComponent *self, SDL_Renderer *renderer, TTF_Font *f
     self->base.name = strdup("TextComponent");
     self->base.update = NULL; // 如果需要更新功能，可以赋值对应的函数指针
     self->base.draw = TextComponent_draw;
-    self->base.free = TextComponent_free;
+    self->base.destroy = TextComponent_free;
     // 保存字体、渲染器和颜色
     self->renderer = renderer;
     self->font = font;

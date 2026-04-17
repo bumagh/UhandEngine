@@ -42,7 +42,7 @@ Transform *createTransform(float x, float y)
     }
     t->base.name = strdup("Transform");
     t->base.draw = NULL;
-    t->base.free = freeTransform;
+    t->base.destroy = freeTransform;
     t->base.update = NULL;
     t->base.next = NULL;
 
@@ -72,11 +72,11 @@ void freeTransform(Component *component)
     {
         if (component->name != NULL)
         {
-            free(component->name); // 释放name
+            free((void *)component->name); // 释放name
         }
         component->draw = NULL;
         component->update = NULL;
-        component->free = NULL;
+        component->destroy = NULL;
         free(component);
         component = NULL;
     }
