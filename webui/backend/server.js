@@ -622,25 +622,25 @@ app.post('/api/pipeline/compile', async (req, res) => {
       }
 
       // Auto-fix Linux font paths
-      // For Web platform: replace with "msyh.ttc" (Microsoft YaHei, supports Chinese/English)
+      // For Web platform: replace with "simhei.ttf" (SimHei, supports Chinese/English)
       // For Windows platform: replace with Windows font path
       if (process.platform === 'win32') {
         if (targetPlatform === 'web') {
           content = content.replace(
             /TTF_OpenFont\s*\(\s*["']\/usr\/share\/fonts\/[^"']+["']\s*,/g,
-            'TTF_OpenFont("msyh.ttc",'
+            'TTF_OpenFont("simhei.ttf",'
           );
           if (content !== file.content) {
-            console.log(`Fixed Linux font paths to msyh.ttc for Web platform in ${file.path}`);
+            console.log(`Fixed Linux font paths to simhei.ttf for Web platform in ${file.path}`);
           }
         } else {
           content = content.replace(
             /\/usr\/share\/fonts\/truetype\/dejavu\/DejaVuSans-Bold\.ttf/g,
-            'C:\\\\Windows\\\\Fonts\\\\msyh.ttc'
+            'C:\\\\Windows\\\\Fonts\\\\simhei.ttf'
           );
           content = content.replace(
             /\/usr\/share\/fonts\/[^"']+/g,
-            'C:\\\\Windows\\\\Fonts\\\\msyh.ttc'
+            'C:\\\\Windows\\\\Fonts\\\\simhei.ttf'
           );
           if (content !== file.content) {
             console.log(`Fixed Linux font paths to Windows paths in ${file.path}`);
@@ -723,16 +723,16 @@ emcc game.c main.c \\
   -I../../include \\
   -o game.html \\
   --shell-file shell.html \\
-  --preload-file msyh.ttc \\
+  --preload-file simhei.ttf \\
   -std=c99
 
 echo "Build complete! Open game.html in a browser."
 `;
           fs.writeFileSync(emscriptenScript, emscriptenScriptContent, 'utf8');
           
-          // Copy font file for Web platform (Microsoft YaHei for Chinese/English support)
-          const fontSrc = 'C:\\Windows\\Fonts\\msyh.ttc';
-          const fontDest = path.join(pipelineDir, 'msyh.ttc');
+          // Copy font file for Web platform (SimHei for Chinese/English support)
+          const fontSrc = 'C:\\Windows\\Fonts\\simhei.ttf';
+          const fontDest = path.join(pipelineDir, 'simhei.ttf');
           if (fs.existsSync(fontSrc) && !fs.existsSync(fontDest)) {
             fs.copyFileSync(fontSrc, fontDest);
             console.log(`Copied font file to ${fontDest}`);
