@@ -949,7 +949,7 @@ app.post('/api/pipeline/run', async (req, res) => {
         logs.push(logEntry);
         console.log(logEntry);
 
-        let filePath = path.join(pipelineDir, req.url === '/' ? 'game.html' : req.url);
+        let filePath = path.join(pipelineDir, req.url === '/' ? 'test.html' : req.url);
         if (!fs.existsSync(filePath)) {
           filePath = targetExecutable;
         }
