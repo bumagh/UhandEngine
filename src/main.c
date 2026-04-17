@@ -22,15 +22,11 @@
 #include "draw.h"
 #include "global.h"
 #include "./engine/list.h"
-#include "./engine/uiComponent.h"
-#include "./engine/gameObjectList.h"
+#include "./engine/gameObject.h"
 #include "./engine/Scene.h"
 int w, h;
 #define SDL_DELAY 12
 #define FRAMERATE 30
-// 全局或静态变量，用于管理弹窗状态
-int isPopupVisible = 0;    // 弹窗是否可见
-UIComponent *popup = NULL; // 存储弹窗的指针
 int success = 1;
 SDL_Event e;
 int gQuit = 0;
@@ -152,14 +148,11 @@ void tick()
         handleButtons();
     }
 
-    // MVP: 通过 Scene 更新 UIComponent
-    Scene_UpdateUI(mainScene);
-
     SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
     SDL_RenderClear(renderer);
 
-    // MVP: 通过 Scene 渲染 UIComponent
-    Scene_RenderUI(mainScene, renderer);
+    // 通过 Scene 渲染 GameObject
+    Scene_RenderGameObjects(mainScene, renderer);
 
     SDL_RenderPresent(renderer);
     // 更新 lastTime，准备下一帧使用
@@ -218,41 +211,8 @@ void gameInit()
     Scene_Awake(mainScene);
     Scene_Start(mainScene);
 
-    // MVP: 创建标题文本 (基于 AI 输出)
-    SDL_Color titleColor = {255, 255, 255, 255};
-    SDL_Color titleBgColor = {32, 32, 32, 255};
-    UIComponent *titleText = createUIComponent(w/2 - 100, h/2 - 120, 200, 60, titleBgColor, "Main Menu", font, titleColor, NULL);
-    if (titleText)
-    {
-        Scene_AddUIComponent(mainScene, (Component *)titleText);
-    }
-
-    // MVP: 创建开始按钮 (基于 AI 输出)
-    SDL_Color startButtonColor = {100, 150, 255, 255};
-    SDL_Color startButtonTextColor = {255, 255, 255, 255};
-    UIComponent *startButton = createUIComponent(w/2 - 75, h/2 - 30, 150, 40, startButtonColor, "Start Game", font, startButtonTextColor, onStartButtonClick);
-    if (startButton)
-    {
-        Scene_AddUIComponent(mainScene, (Component *)startButton);
-    }
-
-    // MVP: 创建设置按钮 (基于 AI 输出)
-    SDL_Color settingsButtonColor = {100, 100, 100, 255};
-    SDL_Color settingsButtonTextColor = {204, 204, 204, 255};
-    UIComponent *settingsButton = createUIComponent(w/2 - 75, h/2 + 30, 150, 40, settingsButtonColor, "Settings", font, settingsButtonTextColor, onSettingsButtonClick);
-    if (settingsButton)
-    {
-        Scene_AddUIComponent(mainScene, (Component *)settingsButton);
-    }
-
-    // MVP: 创建退出按钮 (基于 AI 输出)
-    SDL_Color quitButtonColor = {100, 100, 100, 255};
-    SDL_Color quitButtonTextColor = {204, 204, 204, 255};
-    UIComponent *quitButton = createUIComponent(w/2 - 75, h/2 + 90, 150, 40, quitButtonColor, "Quit", font, quitButtonTextColor, onQuitButtonClick);
-    if (quitButton)
-    {
-        Scene_AddUIComponent(mainScene, (Component *)quitButton);
-    }
+    // TODO: 使用 GameObject 替代 UIComponent 创建游戏对象
+    // 当前为简化版本，后续会添加 GameObject 创建逻辑
 }
 void loop()
 {
