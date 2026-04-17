@@ -621,19 +621,30 @@ app.post('/api/pipeline/compile', async (req, res) => {
         }
       }
 
-      // Auto-fix Linux font paths to Windows font paths (only for Windows platform)
-      // Skip for Web platform to preserve #ifdef __EMSCRIPTEN__ conditional compilation
-      if (process.platform === 'win32' && targetPlatform !== 'web') {
-        content = content.replace(
-          /\/usr\/share\/fonts\/truetype\/dejavu\/DejaVuSans-Bold\.ttf/g,
-          'C:\\\\Windows\\\\Fonts\\\\arial.ttf'
-        );
-        content = content.replace(
-          /\/usr\/share\/fonts\/[^"']+/g,
-          'C:\\\\Windows\\\\Fonts\\\\arial.ttf'
-        );
-        if (content !== file.content) {
-          console.log(`Fixed Linux font paths in ${file.path}`);
+      // Auto-fix Linux font paths
+      // For Web platform: replace with NULL (SDL2 default font)
+      // For Windows platform: replace with Windows font path
+      if (process.platform === 'win32') {
+        if (targetPlatform === 'web') {
+          content = content.replace(
+            /TTF_OpenFont\s*\(\s*["']\/usr\/share\/fonts\/[^"']+["']\s*,/g,
+            'TTF_OpenFont(NULL,'
+          );
+          if (content !== file.content) {
+            console.log(`Fixed Linux font paths to NULL for Web platform in ${file.path}`);
+          }
+        } else {
+          content = content.replace(
+            /\/usr\/share\/fonts\/truetype\/dejavu\/DejaVuSans-Bold\.ttf/g,
+            'C:\\\\Windows\\\\Fonts\\\\arial.ttf'
+          );
+          content = content.replace(
+            /\/usr\/share\/fonts\/[^"']+/g,
+            'C:\\\\Windows\\\\Fonts\\\\arial.ttf'
+          );
+          if (content !== file.content) {
+            console.log(`Fixed Linux font paths to Windows paths in ${file.path}`);
+          }
         }
       }
 
