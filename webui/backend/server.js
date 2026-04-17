@@ -683,8 +683,10 @@ emcc game.c main.c ^
   -s USE_SDL_TTF=2 ^
   -s WASM=1 ^
   -s ALLOW_MEMORY_GROWTH=1 ^
+  -s ASYNCIFY=1 ^
   -I../../include ^
   -o game.html ^
+  --shell-file shell.html ^
   -std=c99
 
 echo Build complete! Open game.html in a browser.
@@ -705,8 +707,10 @@ emcc game.c main.c \\
   -s USE_SDL_TTF=2 \\
   -s WASM=1 \\
   -s ALLOW_MEMORY_GROWTH=1 \\
+  -s ASYNCIFY=1 \\
   -I../../include \\
   -o game.html \\
+  --shell-file shell.html \\
   -std=c99
 
 echo "Build complete! Open game.html in a browser."
