@@ -109,13 +109,14 @@ function EngineTest() {
             <Terminal className="w-5 h-5" />
             Web 预览
           </h2>
-          <div className="bg-gray-800 rounded-lg overflow-hidden">
-            <iframe
-              src={webUrl}
-              className="w-full h-96"
-              title="Web Engine Preview"
-            />
-          </div>
+          <a
+            href={webUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded"
+          >
+            在新标签页中打开 Web 预览
+          </a>
         </div>
       )}
 
