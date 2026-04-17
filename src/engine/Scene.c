@@ -1,8 +1,12 @@
 // Scene.c
 #include "Scene.h"
-#include "uiComponent.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+// 递归遍历 GameObject 树
+static void UpdateGameObjectTree(GameObject *obj);
+static void RenderGameObjectTree(GameObject *obj, SDL_Renderer *renderer);
 
 // Scene 创建和销毁
 Scene *Scene_Create()
@@ -14,21 +18,23 @@ Scene *Scene_Create()
         return NULL;
     }
 
-    scene->gameObjectList = createGameObjectList();
-    if (scene->gameObjectList == NULL)
+    // 初始化所有字段
+    memset(scene, 0, sizeof(Scene));
+
+    // 创建根对象
+    scene->rootObject = createGameObject("SceneRoot");
+    if (scene->rootObject == NULL)
     {
-        printf("Failed to create GameObjectList for Scene\n");
+        printf("Failed to create root GameObject for Scene\n");
         free(scene);
         return NULL;
     }
-
-    scene->uiComponents = NULL;
 
     scene->renderQueue = RenderQueue_Create();
     if (scene->renderQueue == NULL)
     {
         printf("Failed to create RenderQueue for Scene\n");
-        free(scene->gameObjectList);
+        freeGameObject(scene->rootObject);
         free(scene);
         return NULL;
     }
@@ -41,25 +47,16 @@ void Scene_Destroy(Scene *scene)
     if (scene == NULL)
         return;
 
-    if (scene->gameObjectList)
+    // 销毁根对象（会递归销毁所有子对象）
+    if (scene->rootObject)
     {
-        GameObjectList_CallDestroy(scene->gameObjectList);
-        free(scene->gameObjectList);
-        scene->gameObjectList = NULL;
-    }
-
-    // 释放 UI 组件
-    UIComponent *current = scene->uiComponents;
-    while (current != NULL)
-    {
-        UIComponent *next = (UIComponent *)current->base.next;
-        if (current->base.free)
+        if (scene->rootObject->Destroy)
         {
-            current->base.free((Component *)current);
+            scene->rootObject->Destroy(scene->rootObject);
         }
-        current = next;
+        freeGameObject(scene->rootObject);
+        scene->rootObject = NULL;
     }
-    scene->uiComponents = NULL;
 
     if (scene->renderQueue)
     {
@@ -73,10 +70,11 @@ void Scene_Destroy(Scene *scene)
 // GameObject 管理
 void Scene_AddGameObject(Scene *scene, GameObject *go)
 {
-    if (scene == NULL || scene->gameObjectList == NULL || go == NULL)
+    if (scene == NULL || scene->rootObject == NULL || go == NULL)
         return;
 
-    GameObjectList_Add(scene->gameObjectList, go);
+    // 将对象添加为根对象的子对象
+    addChild(scene->rootObject, go);
 
     // 同时添加到渲染队列
     if (scene->renderQueue)
@@ -87,94 +85,100 @@ void Scene_AddGameObject(Scene *scene, GameObject *go)
 
 void Scene_RemoveGameObject(Scene *scene, GameObject *obj)
 {
-    if (scene == NULL || scene->gameObjectList == NULL || obj == NULL)
+    if (scene == NULL || obj == NULL)
         return;
 
-    GameObjectList_Remove(scene->gameObjectList, obj);
-}
-
-// UIComponent 管理（临时 MVP 支持）
-void Scene_AddUIComponent(Scene *scene, UIComponent *uiComponent)
-{
-    if (scene == NULL || uiComponent == NULL)
-        return;
-
-    uiComponent->base.next = (Component *)scene->uiComponents;
-    scene->uiComponents = uiComponent;
-}
-
-void Scene_RemoveUIComponent(Scene *scene, UIComponent *uiComponent)
-{
-    if (scene == NULL || uiComponent == NULL)
-        return;
-
-    UIComponent **current = &scene->uiComponents;
-    while (*current)
+    // 从父对象中移除
+    if (obj->parent)
     {
-        if (*current == uiComponent)
-        {
-            *current = (UIComponent *)uiComponent->base.next;
-            uiComponent->base.next = NULL;
-            return;
-        }
-        current = (UIComponent **)&(*current)->base.next;
+        removeChild(obj->parent, obj);
     }
 }
 
 // Scene 生命周期方法
 void Scene_Awake(Scene *scene)
 {
-    if (scene == NULL || scene->gameObjectList == NULL)
+    if (scene == NULL || scene->rootObject == NULL)
         return;
 
-    GameObjectList_CallAwake(scene->gameObjectList);
+    scene->isAwake = 1;
+
+    // 递归调用所有对象的 Awake
+    UpdateGameObjectTree(scene->rootObject);
+
+    // 调用场景自定义 Awake
+    if (scene->Awake)
+    {
+        scene->Awake(scene);
+    }
 }
 
 void Scene_Start(Scene *scene)
 {
-    if (scene == NULL || scene->gameObjectList == NULL)
+    if (scene == NULL || scene->rootObject == NULL)
         return;
 
-    GameObjectList_CallStart(scene->gameObjectList);
+    scene->isStarted = 1;
+
+    // 递归调用所有对象的 Start
+    GameObject *obj = scene->rootObject->firstChild;
+    while (obj)
+    {
+        if (obj->Start)
+        {
+            obj->Start(obj);
+        }
+        obj = obj->nextSibling;
+    }
+
+    // 调用场景自定义 Start
+    if (scene->Start)
+    {
+        scene->Start(scene);
+    }
 }
 
 void Scene_Update(Scene *scene)
 {
-    if (scene == NULL || scene->gameObjectList == NULL)
+    if (scene == NULL || scene->rootObject == NULL)
         return;
 
-    GameObjectList_CallUpdate(scene->gameObjectList);
-}
-
-void Scene_UpdateUI(Scene *scene)
-{
-    if (scene == NULL)
-        return;
-
-    UIComponent *current = scene->uiComponents;
-    while (current != NULL)
+    // 递归更新所有对象
+    GameObject *obj = scene->rootObject->firstChild;
+    while (obj)
     {
-        if (current->base.update)
-        {
-            current->base.update((Component *)current);
-        }
-        current = (UIComponent *)current->base.next;
+        UpdateGameObjectTree(obj);
+        obj = obj->nextSibling;
+    }
+
+    // 调用场景自定义 Update
+    if (scene->Update)
+    {
+        scene->Update(scene);
     }
 }
 
-void Scene_RenderUI(Scene *scene, SDL_Renderer *renderer)
+// 递归更新 GameObject 树
+static void UpdateGameObjectTree(GameObject *obj)
 {
-    if (scene == NULL || renderer == NULL)
+    if (!obj || !obj->active)
         return;
 
-    UIComponent *current = scene->uiComponents;
-    while (current != NULL)
+    // 更新当前对象
+    if (obj->Update)
     {
-        if (current->base.draw)
-        {
-            current->base.draw((Component *)current, renderer);
-        }
-        current = (UIComponent *)current->base.next;
+        obj->Update(obj);
+    }
+
+    // 更新组件
+    updateGameObject(obj);
+
+    // 递归更新子对象
+    GameObject *child = obj->firstChild;
+    while (child)
+    {
+        UpdateGameObjectTree(child);
+        child = child->nextSibling;
     }
 }
 
@@ -199,24 +203,36 @@ int IsGameObjectVisible(GameObject *go)
 
 void Scene_RenderGameObjects(Scene *scene, SDL_Renderer *renderer)
 {
-    if (scene == NULL || renderer == NULL || scene->gameObjectList == NULL)
+    if (scene == NULL || renderer == NULL || scene->rootObject == NULL)
         return;
 
-    GameObject *current = scene->gameObjectList->head;
-
-    // 第一遍：收集可见且激活的 GameObject
-    // TODO: 后续优化为按 depth 排序
-    while (current != NULL)
+    // 递归渲染所有对象
+    GameObject *obj = scene->rootObject->firstChild;
+    while (obj)
     {
-        // 检查 active 和 visible 状态
-        if (current->active && IsGameObjectVisible(current))
-        {
-            if (current->render)
-            {
-                current->render(current, renderer, NULL);
-            }
-        }
-        current = current->next;
+        RenderGameObjectTree(obj, renderer);
+        obj = obj->nextSibling;
+    }
+}
+
+// 递归渲染 GameObject 树
+static void RenderGameObjectTree(GameObject *obj, SDL_Renderer *renderer)
+{
+    if (!obj || !obj->visible)
+        return;
+
+    // 先渲染子对象（从后往前，保证父对象在子对象之后）
+    GameObject *child = obj->firstChild;
+    while (child)
+    {
+        RenderGameObjectTree(child, renderer);
+        child = child->nextSibling;
+    }
+
+    // 渲染当前对象
+    if (obj->render && obj->active)
+    {
+        obj->render(obj, renderer, NULL);
     }
 }
 
@@ -226,20 +242,21 @@ void Scene_Render(Scene *scene, SDL_Renderer *renderer, void *context)
     if (scene == NULL || renderer == NULL)
         return;
 
-    // 排序渲染队列
+    // 调用场景自定义 Render
+    if (scene->Render)
+    {
+        scene->Render(scene, renderer);
+    }
+    else
+    {
+        // 默认渲染逻辑
+        Scene_RenderGameObjects(scene, renderer);
+    }
+
+    // 排序并渲染渲染队列
     if (scene->renderQueue)
     {
         RenderQueue_Sort(scene->renderQueue);
-
-        // 渲染队列中的所有对象
         RenderQueue_Render(scene->renderQueue, renderer, context);
     }
-}
-
-void Scene_DestroyAll(Scene *scene)
-{
-    if (scene == NULL || scene->gameObjectList == NULL)
-        return;
-
-    GameObjectList_CallDestroy(scene->gameObjectList);
 }

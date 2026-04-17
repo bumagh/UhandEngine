@@ -38,15 +38,13 @@ typedef struct GameObject
     int depth;        // 渲染层级 (z-index)
 
     // 父子关系
-    struct GameObject *parent;      // 父对象
-    struct GameObject *children;    // 子对象链表头
+    struct GameObject *parent;        // 父对象
+    struct GameObject *firstChild;    // 第一个子对象
+    struct GameObject *nextSibling;   // 下一个兄弟对象
 
     // 组件
     Component *components;   // 指向组件链表的头指针
     Transform *transform;    // Transform 组件
-
-    // 链表节点 (用于 Scene 的 GameObjectList)
-    struct GameObject *next; // 链表中的下一个节点
 
     void (*free)(struct GameObject *go);
     // 生命周期函数指针
