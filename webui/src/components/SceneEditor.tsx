@@ -271,7 +271,7 @@ export default function SceneEditor() {
       const response = await fetch('/api/scene/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(scene)
+        body: JSON.stringify({ scene })
       })
 
       const data = await response.json()

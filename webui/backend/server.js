@@ -1190,9 +1190,11 @@ app.post('/api/engine/stop', (req, res) => {
 
 // Scene Preview API - POST to start preview
 app.post('/api/scene/preview', async (req, res) => {
+  console.log('Received scene preview request:', JSON.stringify(req.body, null, 2));
   const { scene } = req.body;
 
   if (!scene) {
+    console.log('Scene data missing from request body');
     return res.status(400).json({ success: false, error: 'Scene data is required' });
   }
 
