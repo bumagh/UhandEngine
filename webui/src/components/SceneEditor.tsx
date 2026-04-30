@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { 
   Layers, Plus, Trash2, Edit3, Save, FolderOpen, 
   Eye, EyeOff, Play, Square, ChevronRight, ChevronDown,
-  Box, Type, Container as ContainerIcon, ChevronLeft, ChevronRight as ChevronRightIcon
+  Box, Type, Container as ContainerIcon, ChevronLeft, ChevronRight as ChevronRightIcon, RefreshCw
 } from 'lucide-react'
 
 interface GameObject {
@@ -40,6 +40,8 @@ export default function SceneEditor() {
   const [isPreviewing, setIsPreviewing] = useState(false)
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false)
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string>('')
+  const [previewLoading, setPreviewLoading] = useState(false)
 
   // 初始化示例场景
   useEffect(() => {
@@ -259,6 +261,55 @@ export default function SceneEditor() {
     reader.readAsText(file)
   }
 
+  const startPreview = async () => {
+    if (!scene) return
+
+    setPreviewLoading(true)
+    setIsPreviewing(true)
+
+    try {
+      const response = await fetch('/api/scene/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(scene)
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setPreviewUrl(data.url)
+      } else {
+        console.error('Failed to start preview:', data.error)
+        setIsPreviewing(false)
+      }
+    } catch (error) {
+      console.error('Failed to start preview:', error)
+      setIsPreviewing(false)
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  const stopPreview = async () => {
+    try {
+      await fetch('/api/scene/preview', {
+        method: 'DELETE'
+      })
+    } catch (error) {
+      console.error('Failed to stop preview:', error)
+    }
+    setIsPreviewing(false)
+    setPreviewUrl('')
+  }
+
+  const togglePreview = () => {
+    if (isPreviewing) {
+      stopPreview()
+    } else {
+      startPreview()
+    }
+  }
+
   return (
     <div className="flex h-full w-full">
       {/* Left Panel - Hierarchy */}
@@ -333,23 +384,41 @@ export default function SceneEditor() {
         <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
           <h2 className="text-lg font-semibold whitespace-nowrap">Scene Preview</h2>
           <button
-            onClick={() => setIsPreviewing(!isPreviewing)}
-            className={`${isPreviewing ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} px-4 py-2 rounded flex items-center gap-2 flex-shrink-0`}
+            onClick={togglePreview}
+            disabled={previewLoading}
+            className={`${isPreviewing ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} px-4 py-2 rounded flex items-center gap-2 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            {isPreviewing ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            {isPreviewing ? 'Stop' : 'Preview'}
+            {previewLoading ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Loading...
+              </>
+            ) : isPreviewing ? (
+              <>
+                <Square className="w-4 h-4" />
+                Stop
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4" />
+                Preview
+              </>
+            )}
           </button>
         </div>
         
-        <div className="flex-1 flex items-center justify-center bg-gray-950 relative overflow-hidden min-w-0">
-          {isPreviewing ? (
-            <div className="text-white text-center">
-              <p>Preview Mode</p>
-              <p className="text-sm text-gray-400">Game preview would be rendered here</p>
-            </div>
+        <div className="flex-1 bg-gray-950 relative overflow-hidden min-w-0">
+          {previewUrl ? (
+            <iframe
+              src={previewUrl}
+              className="w-full h-full border-0"
+              title="Scene Preview"
+            />
           ) : (
-            <div className="text-gray-500 text-center">
-              <p>Click "Preview" to test the scene</p>
+            <div className="flex items-center justify-center h-full">
+              <div className="text-gray-500 text-center">
+                <p>Click "Preview" to test the scene</p>
+              </div>
             </div>
           )}
         </div>

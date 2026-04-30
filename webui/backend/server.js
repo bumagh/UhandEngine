@@ -3,11 +3,13 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 const { exec } = require('child_process');
 require('dotenv').config();
 
 // Store active Web server instances
 const webServers = new Map(); // pipelineId -> { server, port, logs: [] }
+let previewServer = null; // Scene preview server
 
 const AIService = require('./ai-service');
 
@@ -1184,6 +1186,84 @@ app.post('/api/engine/stop', (req, res) => {
   // 3. Return success/failure status
   
   res.json({ success: true, message: 'Test stop request received' });
+});
+
+// Scene Preview API
+app.post('/api/scene/preview', async (req, res) => {
+  const { scene } = req.body;
+
+  if (!scene) {
+    return res.status(400).json({ success: false, error: 'Scene data is required' });
+  }
+
+  try {
+    const projectRoot = path.join(__dirname, '../..');
+    const srcPath = path.join(projectRoot, 'src');
+    const sceneDataPath = path.join(srcPath, 'scene_data.json');
+
+    // Save scene data to file
+    fs.writeFileSync(sceneDataPath, JSON.stringify(scene, null, 2));
+
+    // Compile and run web build
+    const { exec } = require('child_process');
+    
+    exec('cd src && make emcc', { cwd: projectRoot }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Compilation error:', error);
+        return res.status(500).json({ success: false, error: 'Compilation failed', output: stderr });
+      }
+
+      // Start HTTP server for web preview
+      const httpPort = 8080;
+      const webPath = path.join(projectRoot, 'web/UhandEngine');
+      
+      // Check if server is already running
+      if (!previewServer) {
+        previewServer = http.createServer((req, res) => {
+          const filePath = path.join(webPath, req.url === '/' ? 'index.html' : req.url);
+          const ext = path.extname(filePath);
+          const contentType = ext === '.html' ? 'text/html' : 
+                            ext === '.js' ? 'application/javascript' : 
+                            ext === '.wasm' ? 'application/wasm' : 'text/plain';
+          
+          try {
+            const data = fs.readFileSync(filePath);
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(data);
+          } catch (e) {
+            res.writeHead(404);
+            res.end('Not found');
+          }
+        });
+        
+        previewServer.listen(httpPort, () => {
+          console.log(`Scene preview server running on port ${httpPort}`);
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        url: `http://localhost:${httpPort}/index.html`,
+        output: stdout 
+      });
+    });
+  } catch (error) {
+    console.error('Scene preview error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+app.delete('/api/scene/preview', (req, res) => {
+  if (previewServer) {
+    previewServer.close();
+    previewServer = null;
+    res.json({ success: true, message: 'Preview server stopped' });
+  } else {
+    res.json({ success: true, message: 'No preview server running' });
+  }
 });
 
 app.post('/api/pipeline/generate-code', async (req, res) => {
