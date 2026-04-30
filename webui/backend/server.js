@@ -1176,6 +1176,16 @@ app.post('/api/engine/test', async (req, res) => {
   }
 });
 
+// Engine Test Stop API
+app.post('/api/engine/stop', (req, res) => {
+  // For now, this is a placeholder. In a real implementation, we would need to:
+  // 1. Track running test processes
+  // 2. Kill those processes
+  // 3. Return success/failure status
+  
+  res.json({ success: true, message: 'Test stop request received' });
+});
+
 app.post('/api/pipeline/generate-code', async (req, res) => {
   const { design, requirements, platform } = req.body;
 

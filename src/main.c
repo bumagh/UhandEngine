@@ -244,6 +244,14 @@ void gameInit()
             addComponent(child1, (Component *)sprite);
             printf("渲染测试：为 Child1 添加 SpriteComponent\n");
         }
+
+        // 设置 child1 的位置
+        if (child1->transform)
+        {
+            child1->transform->x = 100;
+            child1->transform->y = 100;
+            printf("渲染测试：设置 Child1 位置为 (100, 100)\n");
+        }
     }
 
     // 调用 Scene 生命周期函数

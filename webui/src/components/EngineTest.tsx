@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Play, Square, RefreshCw, Terminal, CheckCircle, XCircle } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Play, Square, RefreshCw, Terminal, CheckCircle, XCircle, StopCircle } from 'lucide-react'
 
 interface TestResult {
   platform: 'native' | 'web'
@@ -13,18 +13,19 @@ function EngineTest() {
   const [isRunning, setIsRunning] = useState(false)
   const [selectedPlatform, setSelectedPlatform] = useState<'native' | 'web' | 'both'>('both')
   const [webUrl, setWebUrl] = useState<string>('')
+  const outputRef = useRef<HTMLDivElement>(null)
 
   const runTest = async (platform: 'native' | 'web') => {
     const newResult: TestResult = {
       platform,
       status: 'running',
-      output: `Starting ${platform} test...`,
+      output: `Starting ${platform} test...\n`,
       timestamp: new Date().toISOString()
     }
     setTestResults(prev => [...prev, newResult])
+    setIsRunning(true)
 
     try {
-      // 这里需要调用后端 API 来触发编译和测试
       const response = await fetch('/api/engine/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,24 +49,45 @@ function EngineTest() {
           ? { ...r, status: 'failed', output: `Error: ${error}` }
           : r
       ))
+    } finally {
+      setIsRunning(false)
+    }
+  }
+
+  const stopTest = async () => {
+    try {
+      await fetch('/api/engine/stop', {
+        method: 'POST'
+      })
+      setIsRunning(false)
+      setTestResults(prev => prev.map(r => 
+        r.status === 'running' ? { ...r, status: 'failed', output: r.output + '\nTest stopped by user' } : r
+      ))
+    } catch (error) {
+      console.error('Failed to stop test:', error)
     }
   }
 
   const runAllTests = async () => {
-    setIsRunning(true)
     if (selectedPlatform === 'native' || selectedPlatform === 'both') {
       await runTest('native')
     }
     if (selectedPlatform === 'web' || selectedPlatform === 'both') {
       await runTest('web')
     }
-    setIsRunning(false)
   }
 
   const clearResults = () => {
     setTestResults([])
     setWebUrl('')
   }
+
+  // Auto-scroll to bottom when output updates
+  useEffect(() => {
+    if (outputRef.current) {
+      outputRef.current.scrollTop = outputRef.current.scrollHeight
+    }
+  }, [testResults])
 
   return (
     <div className="flex-1 flex flex-col p-6 bg-gray-900 text-white">
@@ -93,6 +115,16 @@ function EngineTest() {
           {isRunning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
           {isRunning ? '运行中...' : '运行测试'}
         </button>
+
+        {isRunning && (
+          <button
+            onClick={stopTest}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
+          >
+            <StopCircle className="w-4 h-4" />
+            停止测试
+          </button>
+        )}
 
         <button
           onClick={clearResults}
@@ -125,7 +157,7 @@ function EngineTest() {
           <Terminal className="w-5 h-5" />
           测试结果
         </h2>
-        <div className="bg-gray-800 rounded-lg p-4 h-96 overflow-y-auto">
+        <div className="bg-gray-800 rounded-lg p-4 h-96 overflow-y-auto" ref={outputRef}>
           {testResults.length === 0 ? (
             <p className="text-gray-500">暂无测试结果</p>
           ) : (
@@ -145,7 +177,7 @@ function EngineTest() {
                       </span>
                     </div>
                   </div>
-                  <pre className="text-sm bg-gray-900 p-2 rounded overflow-x-auto">
+                  <pre className="text-sm bg-gray-900 p-2 rounded overflow-x-auto whitespace-pre-wrap">
                     {result.output}
                   </pre>
                 </div>

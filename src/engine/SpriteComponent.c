@@ -2,6 +2,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// SpriteComponent 的 draw 函数包装器
+static void SpriteComponent_Draw(Component *comp, SDL_Renderer *renderer)
+{
+    if (!comp || !renderer)
+        return;
+
+    SpriteComponent *sprite = (SpriteComponent *)comp;
+
+    // 暂时使用固定位置，后续需要通过 GameObject 获取 Transform 信息
+    float x = 100;
+    float y = 100;
+
+    SpriteComponent_Render(sprite, renderer, x, y, 1.0f, 1.0f, 0.0f);
+}
+
 SpriteComponent *SpriteComponent_Create(SDL_Texture *texture, int width, int height)
 {
     SpriteComponent *sprite = (SpriteComponent *)malloc(sizeof(SpriteComponent));
@@ -16,6 +31,7 @@ SpriteComponent *SpriteComponent_Create(SDL_Texture *texture, int width, int hei
     sprite->base.name = "SpriteComponent";
     sprite->base.destroy = (void (*)(Component *))SpriteComponent_Destroy;
     sprite->base.update = NULL;
+    sprite->base.draw = SpriteComponent_Draw;
 
     // 初始化属性
     sprite->texture = texture;
