@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { 
   Layers, Plus, Trash2, Edit3, Save, FolderOpen, 
   Eye, EyeOff, Play, Square, ChevronRight, ChevronDown,
@@ -42,6 +42,8 @@ export default function SceneEditor() {
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string>('')
   const [previewLoading, setPreviewLoading] = useState(false)
+  const [useEnginePreview, setUseEnginePreview] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // 初始化示例场景
   useEffect(() => {
@@ -310,6 +312,106 @@ export default function SceneEditor() {
     }
   }
 
+  // Canvas 实时渲染
+  useEffect(() => {
+    if (!canvasRef.current || !scene) return
+
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // 设置 Canvas 尺寸
+    const container = canvas.parentElement
+    if (container) {
+      canvas.width = container.clientWidth
+      canvas.height = container.clientHeight
+    }
+
+    // 清空 Canvas
+    ctx.fillStyle = '#0a0a0a'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    // 绘制网格
+    ctx.strokeStyle = '#1a1a1a'
+    ctx.lineWidth = 1
+    const gridSize = 50
+    for (let x = 0; x < canvas.width; x += gridSize) {
+      ctx.beginPath()
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x, canvas.height)
+      ctx.stroke()
+    }
+    for (let y = 0; y < canvas.height; y += gridSize) {
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(canvas.width, y)
+      ctx.stroke()
+    }
+
+    // 递归渲染 GameObject
+    const renderGameObject = (obj: GameObject, parentTransform?: any) => {
+      if (!obj.visible) return
+
+      const transform = obj.transform
+      const x = transform.x + (parentTransform?.x || 0)
+      const y = transform.y + (parentTransform?.y || 0)
+      const width = transform.width || 64
+      const height = transform.height || 64
+      const rotation = transform.rotation || 0
+      const scaleX = transform.scaleX || 1
+      const scaleY = transform.scaleY || 1
+
+      ctx.save()
+      ctx.translate(x, y)
+      ctx.rotate(rotation)
+      ctx.scale(scaleX, scaleY)
+
+      // 绘制选中框
+      if (selectedObject?.id === obj.id) {
+        ctx.strokeStyle = '#3b82f6'
+        ctx.lineWidth = 2
+        ctx.strokeRect(-width/2 - 4, -height/2 - 4, width + 8, height + 8)
+      }
+
+      // 根据类型绘制不同的形状
+      switch (obj.type) {
+        case 'sprite':
+          ctx.fillStyle = '#3b82f6'
+          ctx.fillRect(-width/2, -height/2, width, height)
+          break
+        case 'text':
+          ctx.fillStyle = '#22c55e'
+          ctx.font = '16px Arial'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText('Text', 0, 0)
+          break
+        case 'container':
+          ctx.strokeStyle = '#a855f7'
+          ctx.lineWidth = 2
+          ctx.strokeRect(-width/2, -height/2, width, height)
+          break
+        default:
+          ctx.fillStyle = '#6b7280'
+          ctx.fillRect(-width/2, -height/2, width, height)
+      }
+
+      ctx.restore()
+
+      // 渲染子对象
+      if (obj.children) {
+        obj.children.forEach(child => renderGameObject(child, { x, y }))
+      }
+    }
+
+    renderGameObject(scene.rootObject)
+
+    // 绘制坐标信息
+    ctx.fillStyle = '#ffffff'
+    ctx.font = '12px Arial'
+    ctx.fillText(`Scene: ${scene.name}`, 10, 20)
+  }, [scene, selectedObject, useEnginePreview])
+
   return (
     <div className="flex h-full w-full">
       {/* Left Panel - Hierarchy */}
@@ -383,43 +485,64 @@ export default function SceneEditor() {
       <div className="flex-1 flex flex-col bg-gray-900 min-w-0">
         <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
           <h2 className="text-lg font-semibold whitespace-nowrap">Scene Preview</h2>
-          <button
-            onClick={togglePreview}
-            disabled={previewLoading}
-            className={`${isPreviewing ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} px-4 py-2 rounded flex items-center gap-2 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {previewLoading ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                Loading...
-              </>
-            ) : isPreviewing ? (
-              <>
-                <Square className="w-4 h-4" />
-                Stop
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4" />
-                Preview
-              </>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setUseEnginePreview(!useEnginePreview)}
+              className={`px-3 py-2 rounded flex items-center gap-2 text-sm ${
+                useEnginePreview ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+              title="Toggle between real-time Canvas preview and compiled Engine preview"
+            >
+              {useEnginePreview ? 'Engine' : 'Real-time'}
+            </button>
+            {useEnginePreview && (
+              <button
+                onClick={togglePreview}
+                disabled={previewLoading}
+                className={`${isPreviewing ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} px-4 py-2 rounded flex items-center gap-2 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {previewLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : isPreviewing ? (
+                  <>
+                    <Square className="w-4 h-4" />
+                    Stop
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4" />
+                    Preview
+                  </>
+                )}
+              </button>
             )}
-          </button>
+          </div>
         </div>
         
         <div className="flex-1 bg-gray-950 relative overflow-hidden min-w-0">
-          {previewUrl ? (
-            <iframe
-              src={previewUrl}
-              className="w-full h-full border-0"
-              title="Scene Preview"
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-gray-500 text-center">
-                <p>Click "Preview" to test the scene</p>
+          {useEnginePreview ? (
+            previewUrl ? (
+              <iframe
+                src={previewUrl}
+                className="w-full h-full border-0"
+                title="Scene Preview"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-gray-500 text-center">
+                  <p>Click "Preview" to test the scene with compiled engine</p>
+                </div>
               </div>
-            </div>
+            )
+          ) : (
+            <canvas
+              ref={canvasRef}
+              className="w-full h-full"
+              title="Real-time Scene Preview"
+            />
           )}
         </div>
       </div>
