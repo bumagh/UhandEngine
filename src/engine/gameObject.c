@@ -322,33 +322,33 @@ void setDepth(struct GameObject *go, int depth)
 // 创建特定类型的 GameObject 辅助函数
 GameObject *createSprite(const char *name, const char *texturePath, float x, float y)
 {
-    // TODO: 需要先建立资源管理系统
-    // 当前暂时返回基础 GameObject，后续添加 SpriteComponent
     GameObject *go = createGameObjectWithType(name, GAMEOBJECT_TYPE_SPRITE);
     if (go && go->transform)
     {
         go->transform->setPosition(go->transform, x, y);
     }
+    // TODO: 需要通过 AssetManager 加载纹理并添加 SpriteComponent
+    // 当前暂时返回基础 GameObject
     return go;
 }
 
 GameObject *createText(const char *name, const char *text, TTF_Font *font, SDL_Color color, float x, float y)
 {
-    // TODO: 需要集成 TextComponent
-    // 当前暂时返回基础 GameObject，后续添加 TextComponent
     GameObject *go = createGameObjectWithType(name, GAMEOBJECT_TYPE_TEXT);
     if (go && go->transform)
     {
         go->transform->setPosition(go->transform, x, y);
     }
+    // TODO: 需要添加 TextComponent
+    // 当前暂时返回基础 GameObject
     return go;
 }
 
 GameObject *createContainer(const char *name)
 {
+    // Container 是一个特殊的 GameObject，用于组织其他对象
     GameObject *go = createGameObjectWithType(name, GAMEOBJECT_TYPE_CONTAINER);
-    // Container 主要是利用 parent/children 关系
-    // 不需要额外的组件
+    // Container 默认不渲染，只作为容器
+    go->visible = 0;
     return go;
 }
-
