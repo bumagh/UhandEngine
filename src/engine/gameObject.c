@@ -96,7 +96,7 @@ void updateGameObject(GameObject *go)
 void updateTransform(Component *comp)
 {
     Transform *transform = (Transform *)comp;
-    printf("Transform Update: Position (%.2f, %.2f, %.2f)\n", transform->x, transform->y, transform->z);
+    printf("Transform Update: Position (%.2f, %.2f)\n", transform->x, transform->y);
 }
 
 void freeGameObject(GameObject *go)
