@@ -44,12 +44,24 @@ void InputManager_Update(InputManager *input, SDL_Event *event)
             if (event->button.button < 5)
             {
                 input->mouseButtons[event->button.button] = KEY_STATE_DOWN;
+                // 更新主指针状态
+                if (event->button.button == MOUSE_BUTTON_LEFT)
+                {
+                    input->primaryPointer.isDown = 1;
+                    input->primaryPointer.isPressed = 1;
+                }
             }
             break;
         case SDL_MOUSEBUTTONUP:
             if (event->button.button < 5)
             {
                 input->mouseButtons[event->button.button] = KEY_STATE_UP;
+                // 更新主指针状态
+                if (event->button.button == MOUSE_BUTTON_LEFT)
+                {
+                    input->primaryPointer.isDown = 0;
+                    input->primaryPointer.isReleased = 1;
+                }
             }
             break;
         case SDL_MOUSEMOTION:
@@ -57,9 +69,67 @@ void InputManager_Update(InputManager *input, SDL_Event *event)
             input->mouseY = event->motion.y;
             input->mouseRelX = event->motion.xrel;
             input->mouseRelY = event->motion.yrel;
+            // 更新主指针位置
+            input->primaryPointer.prevX = input->primaryPointer.x;
+            input->primaryPointer.prevY = input->primaryPointer.y;
+            input->primaryPointer.x = event->motion.x;
+            input->primaryPointer.y = event->motion.y;
+            input->primaryPointer.deltaX = event->motion.xrel;
+            input->primaryPointer.deltaY = event->motion.yrel;
             break;
         case SDL_MOUSEWHEEL:
             input->mouseWheel = event->wheel.y;
+            break;
+        case SDL_FINGERDOWN:
+            // 处理触摸开始
+            if (input->activePointerCount < 10)
+            {
+                int index = input->activePointerCount;
+                input->pointers[index].x = (int)(event->tfinger.x * 800); // 假设屏幕宽度800，后续需要动态获取
+                input->pointers[index].y = (int)(event->tfinger.y * 600); // 假设屏幕高度600
+                input->pointers[index].isDown = 1;
+                input->pointers[index].isPressed = 1;
+                input->activePointerCount++;
+                // 如果是第一个触摸点，更新主指针
+                if (index == 0)
+                {
+                    input->primaryPointer = input->pointers[0];
+                }
+            }
+            break;
+        case SDL_FINGERUP:
+            // 处理触摸结束
+            for (int i = 0; i < input->activePointerCount; i++)
+            {
+                if (event->tfinger.fingerId == i) // 简化处理，实际需要跟踪fingerId
+                {
+                    input->pointers[i].isDown = 0;
+                    input->pointers[i].isReleased = 1;
+                    input->activePointerCount--;
+                    break;
+                }
+            }
+            break;
+        case SDL_FINGERMOTION:
+            // 处理触摸移动
+            for (int i = 0; i < input->activePointerCount; i++)
+            {
+                if (event->tfinger.fingerId == i) // 简化处理
+                {
+                    input->pointers[i].prevX = input->pointers[i].x;
+                    input->pointers[i].prevY = input->pointers[i].y;
+                    input->pointers[i].x = (int)(event->tfinger.x * 800);
+                    input->pointers[i].y = (int)(event->tfinger.y * 600);
+                    input->pointers[i].deltaX = input->pointers[i].x - input->pointers[i].prevX;
+                    input->pointers[i].deltaY = input->pointers[i].y - input->pointers[i].prevY;
+                    // 如果是第一个触摸点，更新主指针
+                    if (i == 0)
+                    {
+                        input->primaryPointer = input->pointers[0];
+                    }
+                    break;
+                }
+            }
             break;
     }
 }
@@ -115,6 +185,18 @@ void InputManager_UpdateState(InputManager *input)
 
         input->prevMouseButtons[i] = input->mouseButtons[i];
     }
+
+    // 更新主指针状态
+    if (input->primaryPointer.isPressed)
+    {
+        input->primaryPointer.isPressed = 0;
+    }
+    if (input->primaryPointer.isReleased)
+    {
+        input->primaryPointer.isReleased = 0;
+    }
+    input->primaryPointer.deltaX = 0;
+    input->primaryPointer.deltaY = 0;
 
     // 重置鼠标相对移动和滚轮
     input->mouseRelX = 0;
@@ -189,4 +271,44 @@ int InputManager_GetMouseWheel(InputManager *input)
     if (input)
         return input->mouseWheel;
     return 0;
+}
+
+// 统一的 Pointer 查询（Phaser 风格）
+int InputManager_IsPointerDown(InputManager *input)
+{
+    if (!input)
+        return 0;
+    return input->primaryPointer.isDown;
+}
+
+int InputManager_IsPointerPressed(InputManager *input)
+{
+    if (!input)
+        return 0;
+    return input->primaryPointer.isPressed;
+}
+
+int InputManager_IsPointerReleased(InputManager *input)
+{
+    if (!input)
+        return 0;
+    return input->primaryPointer.isReleased;
+}
+
+void InputManager_GetPointerPosition(InputManager *input, int *x, int *y)
+{
+    if (input)
+    {
+        if (x) *x = input->primaryPointer.x;
+        if (y) *y = input->primaryPointer.y;
+    }
+}
+
+void InputManager_GetPointerDelta(InputManager *input, int *x, int *y)
+{
+    if (input)
+    {
+        if (x) *x = input->primaryPointer.deltaX;
+        if (y) *y = input->primaryPointer.deltaY;
+    }
 }
