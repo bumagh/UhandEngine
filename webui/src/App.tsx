@@ -5,10 +5,11 @@ import CodeEditor from './components/CodeEditor'
 import Settings from './components/Settings'
 import GameDevPipeline from './components/GameDevPipeline/GameDevPipeline'
 import EngineTest from './components/EngineTest'
-import { Layout, Menu, Code, Settings as SettingsIcon, Zap, Cpu } from 'lucide-react'
+import SceneEditor from './components/SceneEditor'
+import { Layout, Menu, Code, Settings as SettingsIcon, Zap, Cpu, Layers } from 'lucide-react'
 
 function App() {
-  const [activePanel, setActivePanel] = useState<'project' | 'ai' | 'editor' | 'settings' | 'pipeline' | 'engine'>('project')
+  const [activePanel, setActivePanel] = useState<'project' | 'ai' | 'editor' | 'settings' | 'pipeline' | 'engine' | 'scene'>('project')
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
@@ -40,6 +41,15 @@ function App() {
           title="Code Editor"
         >
           <Code className="w-6 h-6" />
+        </button>
+        <button
+          onClick={() => setActivePanel('scene')}
+          className={`p-3 rounded-lg transition-colors ${
+            activePanel === 'scene' ? 'bg-primary-600' : 'hover:bg-gray-700'
+          }`}
+          title="Scene Editor"
+        >
+          <Layers className="w-6 h-6" />
         </button>
         <button
           onClick={() => setActivePanel('settings')}
@@ -75,6 +85,7 @@ function App() {
         {activePanel === 'project' && <ProjectBrowser />}
         {activePanel === 'ai' && <AIAssistant />}
         {activePanel === 'editor' && <CodeEditor />}
+        {activePanel === 'scene' && <SceneEditor />}
         {activePanel === 'settings' && <Settings />}
         {activePanel === 'pipeline' && <GameDevPipeline />}
         {activePanel === 'engine' && <EngineTest />}
