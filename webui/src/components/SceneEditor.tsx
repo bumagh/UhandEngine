@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { 
   Layers, Plus, Trash2, Edit3, Save, FolderOpen, 
   Eye, EyeOff, Play, Square, ChevronRight, ChevronDown,
-  Box, Type, Container as ContainerIcon
+  Box, Type, Container as ContainerIcon, ChevronLeft, ChevronRight as ChevronRightIcon
 } from 'lucide-react'
 
 interface GameObject {
@@ -38,6 +38,8 @@ export default function SceneEditor() {
   const [selectedObject, setSelectedObject] = useState<GameObject | null>(null)
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
   const [isPreviewing, setIsPreviewing] = useState(false)
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false)
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
 
   // 初始化示例场景
   useEffect(() => {
@@ -260,57 +262,69 @@ export default function SceneEditor() {
   return (
     <div className="flex h-full">
       {/* Left Panel - Hierarchy */}
-      <div className="w-80 bg-gray-800 flex flex-col border-r border-gray-700">
-        <div className="p-4 border-b border-gray-700">
+      <div 
+        className={`${leftPanelCollapsed ? 'w-0' : 'w-80'} bg-gray-800 flex flex-col border-r border-gray-700 transition-all duration-300 overflow-hidden`}
+      >
+        <div className="p-4 border-b border-gray-700 flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Layers className="w-5 h-5" />
             Scene Hierarchy
           </h2>
+          <button
+            onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+            className="p-1 hover:bg-gray-700 rounded"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-2">
-          {scene ? renderGameObjectTree(scene.rootObject) : <div className="text-gray-500 p-4">No scene loaded</div>}
-        </div>
+        {!leftPanelCollapsed && (
+          <>
+            <div className="flex-1 overflow-y-auto p-2">
+              {scene ? renderGameObjectTree(scene.rootObject) : <div className="text-gray-500 p-4">No scene loaded</div>}
+            </div>
 
-        <div className="p-4 border-t border-gray-700">
-          <div className="flex gap-2 mb-2">
-            <button
-              onClick={() => addGameObject('sprite')}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Sprite
-            </button>
-            <button
-              onClick={() => addGameObject('text')}
-              className="flex-1 bg-green-600 hover:bg-green-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Text
-            </button>
-            <button
-              onClick={() => addGameObject('container')}
-              className="flex-1 bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Container
-            </button>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={saveScene}
-              className="flex-1 bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
-            >
-              <Save className="w-4 h-4" />
-              Save
-            </button>
-            <label className="flex-1 bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm cursor-pointer">
-              <FolderOpen className="w-4 h-4" />
-              Load
-              <input type="file" accept=".json" onChange={loadScene} className="hidden" />
-            </label>
-          </div>
-        </div>
+            <div className="p-4 border-t border-gray-700">
+              <div className="flex gap-2 mb-2">
+                <button
+                  onClick={() => addGameObject('sprite')}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Sprite
+                </button>
+                <button
+                  onClick={() => addGameObject('text')}
+                  className="flex-1 bg-green-600 hover:bg-green-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Text
+                </button>
+                <button
+                  onClick={() => addGameObject('container')}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Container
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={saveScene}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
+                >
+                  <Save className="w-4 h-4" />
+                  Save
+                </button>
+                <label className="flex-1 bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm cursor-pointer">
+                  <FolderOpen className="w-4 h-4" />
+                  Load
+                  <input type="file" accept=".json" onChange={loadScene} className="hidden" />
+                </label>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Middle Panel - Preview */}
@@ -326,7 +340,7 @@ export default function SceneEditor() {
           </button>
         </div>
         
-        <div className="flex-1 flex items-center justify-center bg-gray-950 relative">
+        <div className="flex-1 flex items-center justify-center bg-gray-950 relative overflow-hidden">
           {isPreviewing ? (
             <div className="text-white">
               <p>Preview Mode</p>
@@ -341,217 +355,229 @@ export default function SceneEditor() {
       </div>
 
       {/* Right Panel - Inspector */}
-      <div className="w-80 bg-gray-800 flex flex-col border-l border-gray-700">
+      <div 
+        className={`${rightPanelCollapsed ? 'w-0' : 'w-80'} bg-gray-800 flex flex-col border-l border-gray-700 transition-all duration-300 overflow-hidden`}
+      >
         <div className="p-4 border-b border-gray-700 flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Edit3 className="w-5 h-5" />
             Inspector
           </h2>
-          {selectedObject && (
+          <div className="flex items-center gap-2">
+            {selectedObject && (
+              <button
+                onClick={() => deleteGameObject(selectedObject.id)}
+                className="p-2 bg-red-600 hover:bg-red-700 rounded"
+                title="Delete"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
             <button
-              onClick={() => deleteGameObject(selectedObject.id)}
-              className="p-2 bg-red-600 hover:bg-red-700 rounded"
-              title="Delete"
+              onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+              className="p-1 hover:bg-gray-700 rounded"
             >
-              <Trash2 className="w-4 h-4" />
+              <ChevronRightIcon className="w-4 h-4" />
             </button>
-          )}
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
-          {selectedObject ? (
-            <div className="space-y-4">
-              {/* Basic Properties */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-400 mb-2">Basic</h3>
-                <div className="space-y-2">
-                  <div>
-                    <label className="text-xs text-gray-400">Name</label>
-                    <input
-                      type="text"
-                      value={selectedObject.name}
-                      onChange={(e) => {
-                        const updateName = (obj: GameObject): GameObject => {
-                          if (obj.id === selectedObject.id) return { ...obj, name: e.target.value }
-                          if (obj.children) return { ...obj, children: obj.children.map(updateName) }
-                          return obj
-                        }
-                        setScene(prev => prev ? { ...prev, rootObject: updateName(prev.rootObject) } : null)
-                        setSelectedObject({ ...selectedObject, name: e.target.value })
-                      }}
-                      className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <label className="flex items-center gap-2 text-sm">
+        {!rightPanelCollapsed && (
+          <div className="flex-1 overflow-y-auto p-4">
+            {selectedObject ? (
+              <div className="space-y-4">
+                {/* Basic Properties */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-400 mb-2">Basic</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs text-gray-400">Name</label>
                       <input
-                        type="checkbox"
-                        checked={selectedObject.visible}
-                        onChange={() => toggleVisibility(selectedObject)}
-                      />
-                      Visible
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={selectedObject.active}
-                        onChange={(event) => {
-                          const updateActive = (obj: GameObject): GameObject => {
-                            if (obj.id === selectedObject.id) return { ...obj, active: event.target.checked }
-                            if (obj.children) return { ...obj, children: obj.children.map(updateActive) }
+                        type="text"
+                        value={selectedObject.name}
+                        onChange={(e) => {
+                          const updateName = (obj: GameObject): GameObject => {
+                            if (obj.id === selectedObject.id) return { ...obj, name: e.target.value }
+                            if (obj.children) return { ...obj, children: obj.children.map(updateName) }
                             return obj
                           }
-                          setScene(prev => prev ? { ...prev, rootObject: updateActive(prev.rootObject) } : null)
-                          setSelectedObject({ ...selectedObject, active: event.target.checked })
+                          setScene(prev => prev ? { ...prev, rootObject: updateName(prev.rootObject) } : null)
+                          setSelectedObject({ ...selectedObject, name: e.target.value })
                         }}
-                      />
-                      Active
-                    </label>
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-400">Depth</label>
-                    <input
-                      type="number"
-                      value={selectedObject.depth}
-                      onChange={(e) => {
-                        const updateDepth = (obj: GameObject): GameObject => {
-                          if (obj.id === selectedObject.id) return { ...obj, depth: parseInt(e.target.value) }
-                          if (obj.children) return { ...obj, children: obj.children.map(updateDepth) }
-                          return obj
-                        }
-                        setScene(prev => prev ? { ...prev, rootObject: updateDepth(prev.rootObject) } : null)
-                        setSelectedObject({ ...selectedObject, depth: parseInt(e.target.value) })
-                      }}
-                      className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Transform */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-400 mb-2">Transform</h3>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs text-gray-400">X</label>
-                      <input
-                        type="number"
-                        value={selectedObject.transform.x}
-                        onChange={(e) => updateTransform('x', parseFloat(e.target.value))}
                         className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
                       />
                     </div>
-                    <div>
-                      <label className="text-xs text-gray-400">Y</label>
-                      <input
-                        type="number"
-                        value={selectedObject.transform.y}
-                        onChange={(e) => updateTransform('y', parseFloat(e.target.value))}
-                        className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-400">Rotation (deg)</label>
-                    <input
-                      type="number"
-                      value={(selectedObject.transform.rotation * 180 / Math.PI).toFixed(2)}
-                      onChange={(e) => updateTransform('rotation', parseFloat(e.target.value) * Math.PI / 180)}
-                      className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs text-gray-400">Scale X</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={selectedObject.transform.scaleX}
-                        onChange={(e) => updateTransform('scaleX', parseFloat(e.target.value))}
-                        className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
-                      />
+                    <div className="flex gap-2">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={selectedObject.visible}
+                          onChange={() => toggleVisibility(selectedObject)}
+                        />
+                        Visible
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={selectedObject.active}
+                          onChange={(event) => {
+                            const updateActive = (obj: GameObject): GameObject => {
+                              if (obj.id === selectedObject.id) return { ...obj, active: event.target.checked }
+                              if (obj.children) return { ...obj, children: obj.children.map(updateActive) }
+                              return obj
+                            }
+                            setScene(prev => prev ? { ...prev, rootObject: updateActive(prev.rootObject) } : null)
+                            setSelectedObject({ ...selectedObject, active: event.target.checked })
+                          }}
+                        />
+                        Active
+                      </label>
                     </div>
                     <div>
-                      <label className="text-xs text-gray-400">Scale Y</label>
+                      <label className="text-xs text-gray-400">Depth</label>
                       <input
                         type="number"
-                        step="0.1"
-                        value={selectedObject.transform.scaleY}
-                        onChange={(e) => updateTransform('scaleY', parseFloat(e.target.value))}
-                        className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs text-gray-400">Anchor X</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="1"
-                        value={selectedObject.transform.anchorX}
-                        onChange={(e) => updateTransform('anchorX', parseFloat(e.target.value))}
-                        className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-400">Anchor Y</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="1"
-                        value={selectedObject.transform.anchorY}
-                        onChange={(e) => updateTransform('anchorY', parseFloat(e.target.value))}
-                        className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs text-gray-400">Width</label>
-                      <input
-                        type="number"
-                        value={selectedObject.transform.width}
-                        onChange={(e) => updateTransform('width', parseFloat(e.target.value))}
-                        className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-400">Height</label>
-                      <input
-                        type="number"
-                        value={selectedObject.transform.height}
-                        onChange={(e) => updateTransform('height', parseFloat(e.target.value))}
+                        value={selectedObject.depth}
+                        onChange={(e) => {
+                          const updateDepth = (obj: GameObject): GameObject => {
+                            if (obj.id === selectedObject.id) return { ...obj, depth: parseInt(e.target.value) }
+                            if (obj.children) return { ...obj, children: obj.children.map(updateDepth) }
+                            return obj
+                          }
+                          setScene(prev => prev ? { ...prev, rootObject: updateDepth(prev.rootObject) } : null)
+                          setSelectedObject({ ...selectedObject, depth: parseInt(e.target.value) })
+                        }}
                         className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
                       />
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Components */}
-              {selectedObject.components && selectedObject.components.length > 0 && (
+                {/* Transform */}
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-400 mb-2">Components</h3>
-                  <div className="space-y-1">
-                    {selectedObject.components.map((component, index) => (
-                      <div key={index} className="bg-gray-700 px-2 py-1 rounded text-sm">
-                        {component}
+                  <h3 className="text-sm font-semibold text-gray-400 mb-2">Transform</h3>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-400">X</label>
+                        <input
+                          type="number"
+                          value={selectedObject.transform.x}
+                          onChange={(e) => updateTransform('x', parseFloat(e.target.value))}
+                          className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
+                        />
                       </div>
-                    ))}
+                      <div>
+                        <label className="text-xs text-gray-400">Y</label>
+                        <input
+                          type="number"
+                          value={selectedObject.transform.y}
+                          onChange={(e) => updateTransform('y', parseFloat(e.target.value))}
+                          className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400">Rotation (deg)</label>
+                      <input
+                        type="number"
+                        value={(selectedObject.transform.rotation * 180 / Math.PI).toFixed(2)}
+                        onChange={(e) => updateTransform('rotation', parseFloat(e.target.value) * Math.PI / 180)}
+                        className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-400">Scale X</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={selectedObject.transform.scaleX}
+                          onChange={(e) => updateTransform('scaleX', parseFloat(e.target.value))}
+                          className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-400">Scale Y</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={selectedObject.transform.scaleY}
+                          onChange={(e) => updateTransform('scaleY', parseFloat(e.target.value))}
+                          className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-400">Anchor X</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="1"
+                          value={selectedObject.transform.anchorX}
+                          onChange={(e) => updateTransform('anchorX', parseFloat(e.target.value))}
+                          className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-400">Anchor Y</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="1"
+                          value={selectedObject.transform.anchorY}
+                          onChange={(e) => updateTransform('anchorY', parseFloat(e.target.value))}
+                          className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-400">Width</label>
+                        <input
+                          type="number"
+                          value={selectedObject.transform.width}
+                          onChange={(e) => updateTransform('width', parseFloat(e.target.value))}
+                          className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-400">Height</label>
+                        <input
+                          type="number"
+                          value={selectedObject.transform.height}
+                          onChange={(e) => updateTransform('height', parseFloat(e.target.value))}
+                          className="w-full bg-gray-700 px-2 py-1 rounded text-sm"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-gray-500 text-center py-8">
-              Select a GameObject to edit its properties
-            </div>
-          )}
-        </div>
+
+                {/* Components */}
+                {selectedObject.components && selectedObject.components.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Components</h3>
+                    <div className="space-y-1">
+                      {selectedObject.components.map((component, index) => (
+                        <div key={index} className="bg-gray-700 px-2 py-1 rounded text-sm">
+                          {component}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-gray-500 text-center py-8">
+                Select a GameObject to edit its properties
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
