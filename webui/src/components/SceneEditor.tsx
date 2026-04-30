@@ -260,19 +260,20 @@ export default function SceneEditor() {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full w-full">
       {/* Left Panel - Hierarchy */}
       <div 
-        className={`${leftPanelCollapsed ? 'w-0' : 'w-80'} bg-gray-800 flex flex-col border-r border-gray-700 transition-all duration-300 overflow-hidden`}
+        className={`${leftPanelCollapsed ? 'w-0' : 'flex-1 min-w-0 max-w-md'} bg-gray-800 flex flex-col border-r border-gray-700 transition-all duration-300 overflow-hidden`}
+        style={{ flexBasis: leftPanelCollapsed ? '0' : 'auto' }}
       >
         <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
+          <h2 className="text-lg font-semibold flex items-center gap-2 whitespace-nowrap">
             <Layers className="w-5 h-5" />
             Scene Hierarchy
           </h2>
           <button
             onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
-            className="p-1 hover:bg-gray-700 rounded"
+            className="p-1 hover:bg-gray-700 rounded flex-shrink-0"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -280,32 +281,32 @@ export default function SceneEditor() {
         
         {!leftPanelCollapsed && (
           <>
-            <div className="flex-1 overflow-y-auto p-2">
+            <div className="flex-1 overflow-y-auto p-2 min-w-0">
               {scene ? renderGameObjectTree(scene.rootObject) : <div className="text-gray-500 p-4">No scene loaded</div>}
             </div>
 
-            <div className="p-4 border-t border-gray-700">
+            <div className="p-4 border-t border-gray-700 flex-shrink-0">
               <div className="flex gap-2 mb-2">
                 <button
                   onClick={() => addGameObject('sprite')}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
                 >
-                  <Plus className="w-4 h-4" />
-                  Sprite
+                  <Plus className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">Sprite</span>
                 </button>
                 <button
                   onClick={() => addGameObject('text')}
                   className="flex-1 bg-green-600 hover:bg-green-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
                 >
-                  <Plus className="w-4 h-4" />
-                  Text
+                  <Plus className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">Text</span>
                 </button>
                 <button
                   onClick={() => addGameObject('container')}
                   className="flex-1 bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
                 >
-                  <Plus className="w-4 h-4" />
-                  Container
+                  <Plus className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">Container</span>
                 </button>
               </div>
               <div className="flex gap-2">
@@ -313,12 +314,12 @@ export default function SceneEditor() {
                   onClick={saveScene}
                   className="flex-1 bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
                 >
-                  <Save className="w-4 h-4" />
-                  Save
+                  <Save className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">Save</span>
                 </button>
                 <label className="flex-1 bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm cursor-pointer">
-                  <FolderOpen className="w-4 h-4" />
-                  Load
+                  <FolderOpen className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">Load</span>
                   <input type="file" accept=".json" onChange={loadScene} className="hidden" />
                 </label>
               </div>
@@ -328,26 +329,26 @@ export default function SceneEditor() {
       </div>
 
       {/* Middle Panel - Preview */}
-      <div className="flex-1 flex flex-col bg-gray-900">
-        <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Scene Preview</h2>
+      <div className="flex-1 flex flex-col bg-gray-900 min-w-0">
+        <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
+          <h2 className="text-lg font-semibold whitespace-nowrap">Scene Preview</h2>
           <button
             onClick={() => setIsPreviewing(!isPreviewing)}
-            className={`${isPreviewing ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} px-4 py-2 rounded flex items-center gap-2`}
+            className={`${isPreviewing ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} px-4 py-2 rounded flex items-center gap-2 flex-shrink-0`}
           >
             {isPreviewing ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             {isPreviewing ? 'Stop' : 'Preview'}
           </button>
         </div>
         
-        <div className="flex-1 flex items-center justify-center bg-gray-950 relative overflow-hidden">
+        <div className="flex-1 flex items-center justify-center bg-gray-950 relative overflow-hidden min-w-0">
           {isPreviewing ? (
-            <div className="text-white">
+            <div className="text-white text-center">
               <p>Preview Mode</p>
               <p className="text-sm text-gray-400">Game preview would be rendered here</p>
             </div>
           ) : (
-            <div className="text-gray-500">
+            <div className="text-gray-500 text-center">
               <p>Click "Preview" to test the scene</p>
             </div>
           )}
@@ -356,14 +357,15 @@ export default function SceneEditor() {
 
       {/* Right Panel - Inspector */}
       <div 
-        className={`${rightPanelCollapsed ? 'w-0' : 'w-80'} bg-gray-800 flex flex-col border-l border-gray-700 transition-all duration-300 overflow-hidden`}
+        className={`${rightPanelCollapsed ? 'w-0' : 'flex-1 min-w-0 max-w-md'} bg-gray-800 flex flex-col border-l border-gray-700 transition-all duration-300 overflow-hidden`}
+        style={{ flexBasis: rightPanelCollapsed ? '0' : 'auto' }}
       >
-        <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
+        <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
+          <h2 className="text-lg font-semibold flex items-center gap-2 whitespace-nowrap">
             <Edit3 className="w-5 h-5" />
             Inspector
           </h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {selectedObject && (
               <button
                 onClick={() => deleteGameObject(selectedObject.id)}
@@ -383,7 +385,7 @@ export default function SceneEditor() {
         </div>
 
         {!rightPanelCollapsed && (
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4 min-w-0">
             {selectedObject ? (
               <div className="space-y-4">
                 {/* Basic Properties */}
@@ -408,7 +410,7 @@ export default function SceneEditor() {
                       />
                     </div>
                     <div className="flex gap-2">
-                      <label className="flex items-center gap-2 text-sm">
+                      <label className="flex items-center gap-2 text-sm whitespace-nowrap">
                         <input
                           type="checkbox"
                           checked={selectedObject.visible}
@@ -416,7 +418,7 @@ export default function SceneEditor() {
                         />
                         Visible
                       </label>
-                      <label className="flex items-center gap-2 text-sm">
+                      <label className="flex items-center gap-2 text-sm whitespace-nowrap">
                         <input
                           type="checkbox"
                           checked={selectedObject.active}
@@ -563,7 +565,7 @@ export default function SceneEditor() {
                     <h3 className="text-sm font-semibold text-gray-400 mb-2">Components</h3>
                     <div className="space-y-1">
                       {selectedObject.components.map((component, index) => (
-                        <div key={index} className="bg-gray-700 px-2 py-1 rounded text-sm">
+                        <div key={index} className="bg-gray-700 px-2 py-1 rounded text-sm truncate">
                           {component}
                         </div>
                       ))}
