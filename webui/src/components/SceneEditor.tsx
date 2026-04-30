@@ -47,6 +47,10 @@ export default function SceneEditor() {
   const [isDragging, setIsDragging] = useState(false)
   const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null)
   const [draggedObject, setDraggedObject] = useState<GameObject | null>(null)
+  const [zoom, setZoom] = useState(1)
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
+  const [isPanning, setIsPanning] = useState(false)
+  const [panStartPos, setPanStartPos] = useState<{ x: number; y: number } | null>(null)
 
   // 初始化示例场景
   useEffect(() => {
@@ -334,39 +338,43 @@ export default function SceneEditor() {
     ctx.fillStyle = '#0a0a0a'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-    // 将原点移到 Canvas 中心
+    // 应用缩放和平移
     ctx.save()
-    ctx.translate(canvas.width / 2, canvas.height / 2)
+    ctx.translate(canvas.width / 2 + panOffset.x, canvas.height / 2 + panOffset.y)
+    ctx.scale(zoom, zoom)
 
     // 绘制网格（以中心为原点）
     ctx.strokeStyle = '#1a1a1a'
-    ctx.lineWidth = 1
+    ctx.lineWidth = 1 / zoom
     const gridSize = 50
-    const startX = -canvas.width / 2
-    const startY = -canvas.height / 2
-    for (let x = startX; x < canvas.width / 2; x += gridSize) {
+    const startX = -canvas.width / 2 / zoom - panOffset.x / zoom
+    const startY = -canvas.height / 2 / zoom - panOffset.y / zoom
+    const endX = canvas.width / 2 / zoom - panOffset.x / zoom
+    const endY = canvas.height / 2 / zoom - panOffset.y / zoom
+
+    for (let x = Math.floor(startX / gridSize) * gridSize; x < endX; x += gridSize) {
       ctx.beginPath()
-      ctx.moveTo(x, -canvas.height / 2)
-      ctx.lineTo(x, canvas.height / 2)
+      ctx.moveTo(x, startY)
+      ctx.lineTo(x, endY)
       ctx.stroke()
     }
-    for (let y = startY; y < canvas.height / 2; y += gridSize) {
+    for (let y = Math.floor(startY / gridSize) * gridSize; y < endY; y += gridSize) {
       ctx.beginPath()
-      ctx.moveTo(-canvas.width / 2, y)
-      ctx.lineTo(canvas.width / 2, y)
+      ctx.moveTo(startX, y)
+      ctx.lineTo(endX, y)
       ctx.stroke()
     }
 
     // 绘制坐标轴
     ctx.strokeStyle = '#333333'
-    ctx.lineWidth = 2
+    ctx.lineWidth = 2 / zoom
     ctx.beginPath()
-    ctx.moveTo(-canvas.width / 2, 0)
-    ctx.lineTo(canvas.width / 2, 0)
+    ctx.moveTo(startX, 0)
+    ctx.lineTo(endX, 0)
     ctx.stroke()
     ctx.beginPath()
-    ctx.moveTo(0, -canvas.height / 2)
-    ctx.lineTo(0, canvas.height / 2)
+    ctx.moveTo(0, startY)
+    ctx.lineTo(0, endY)
     ctx.stroke()
 
     // 递归渲染 GameObject
@@ -390,7 +398,7 @@ export default function SceneEditor() {
       // 绘制选中框
       if (selectedObject?.id === obj.id) {
         ctx.strokeStyle = '#3b82f6'
-        ctx.lineWidth = 2
+        ctx.lineWidth = 2 / zoom
         ctx.strokeRect(-width/2 - 4, -height/2 - 4, width + 8, height + 8)
       }
 
@@ -402,14 +410,14 @@ export default function SceneEditor() {
           break
         case 'text':
           ctx.fillStyle = '#22c55e'
-          ctx.font = '16px Arial'
+          ctx.font = `${16 / zoom}px Arial`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
           ctx.fillText('Text', 0, 0)
           break
         case 'container':
           ctx.strokeStyle = '#a855f7'
-          ctx.lineWidth = 2
+          ctx.lineWidth = 2 / zoom
           ctx.strokeRect(-width/2, -height/2, width, height)
           break
         default:
@@ -434,7 +442,8 @@ export default function SceneEditor() {
     ctx.font = '12px Arial'
     ctx.fillText(`Scene: ${scene.name}`, 10, 20)
     ctx.fillText(`Objects: ${countGameObjects(scene.rootObject)}`, 10, 40)
-  }, [scene, selectedObject, useEnginePreview])
+    ctx.fillText(`Zoom: ${(zoom * 100).toFixed(0)}%`, 10, 60)
+  }, [scene, selectedObject, useEnginePreview, zoom, panOffset])
 
   // 辅助函数：统计 GameObject 数量
   const countGameObjects = (obj: GameObject): number => {
@@ -476,21 +485,44 @@ export default function SceneEditor() {
     return null
   }
 
-  // Canvas 坐标转换为场景坐标
+  // Canvas 坐标转换为场景坐标（考虑缩放和平移）
   const canvasToSceneCoords = (canvasX: number, canvasY: number): { x: number; y: number } => {
     if (!canvasRef.current) return { x: 0, y: 0 }
     const canvas = canvasRef.current
     const centerX = canvas.width / 2
     const centerY = canvas.height / 2
     return {
-      x: canvasX - centerX,
-      y: canvasY - centerY
+      x: (canvasX - centerX - panOffset.x) / zoom,
+      y: (canvasY - centerY - panOffset.y) / zoom
     }
+  }
+
+  // 缩放控制函数
+  const handleZoomIn = () => setZoom(prev => Math.min(prev * 1.2, 5))
+  const handleZoomOut = () => setZoom(prev => Math.max(prev / 1.2, 0.1))
+  const handleZoomReset = () => {
+    setZoom(1)
+    setPanOffset({ x: 0, y: 0 })
+  }
+
+  // 鼠标滚轮缩放
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    if (useEnginePreview) return
+    e.preventDefault()
+    const delta = e.deltaY > 0 ? 0.9 : 1.1
+    setZoom(prev => Math.max(0.1, Math.min(5, prev * delta)))
   }
 
   // 鼠标按下事件
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !scene || useEnginePreview) return
+
+    // 中键进行平移
+    if (e.button === 1) {
+      setIsPanning(true)
+      setPanStartPos({ x: e.clientX, y: e.clientY })
+      return
+    }
 
     const canvas = canvasRef.current
     const rect = canvas.getBoundingClientRect()
@@ -510,7 +542,19 @@ export default function SceneEditor() {
 
   // 鼠标移动事件
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !draggedObject || !canvasRef.current || !scene) return
+    if (!canvasRef.current) return
+
+    // 平移处理
+    if (isPanning && panStartPos) {
+      const deltaX = e.clientX - panStartPos.x
+      const deltaY = e.clientY - panStartPos.y
+      setPanOffset(prev => ({ x: prev.x + deltaX, y: prev.y + deltaY }))
+      setPanStartPos({ x: e.clientX, y: e.clientY })
+      return
+    }
+
+    // 拖动 GameObject 处理
+    if (!isDragging || !draggedObject || !scene) return
 
     const canvas = canvasRef.current
     const rect = canvas.getBoundingClientRect()
@@ -557,7 +601,9 @@ export default function SceneEditor() {
   // 鼠标释放事件
   const handleMouseUp = () => {
     setIsDragging(false)
+    setIsPanning(false)
     setDragStartPos(null)
+    setPanStartPos(null)
     setDraggedObject(null)
   }
 
@@ -635,6 +681,31 @@ export default function SceneEditor() {
         <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
           <h2 className="text-lg font-semibold whitespace-nowrap">Scene Preview</h2>
           <div className="flex items-center gap-2">
+            {!useEnginePreview && (
+              <>
+                <button
+                  onClick={handleZoomOut}
+                  className="px-3 py-2 rounded bg-gray-600 hover:bg-gray-700 flex items-center gap-1 text-sm"
+                  title="Zoom Out"
+                >
+                  -
+                </button>
+                <button
+                  onClick={handleZoomReset}
+                  className="px-3 py-2 rounded bg-gray-600 hover:bg-gray-700 text-sm"
+                  title="Reset Zoom"
+                >
+                  {(zoom * 100).toFixed(0)}%
+                </button>
+                <button
+                  onClick={handleZoomIn}
+                  className="px-3 py-2 rounded bg-gray-600 hover:bg-gray-700 flex items-center gap-1 text-sm"
+                  title="Zoom In"
+                >
+                  +
+                </button>
+              </>
+            )}
             <button
               onClick={() => setUseEnginePreview(!useEnginePreview)}
               className={`px-3 py-2 rounded flex items-center gap-2 text-sm ${
@@ -695,6 +766,7 @@ export default function SceneEditor() {
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
+              onWheel={handleWheel}
             />
           )}
         </div>
