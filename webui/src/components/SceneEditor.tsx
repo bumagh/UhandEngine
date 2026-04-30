@@ -331,22 +331,40 @@ export default function SceneEditor() {
     ctx.fillStyle = '#0a0a0a'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-    // 绘制网格
+    // 将原点移到 Canvas 中心
+    ctx.save()
+    ctx.translate(canvas.width / 2, canvas.height / 2)
+
+    // 绘制网格（以中心为原点）
     ctx.strokeStyle = '#1a1a1a'
     ctx.lineWidth = 1
     const gridSize = 50
-    for (let x = 0; x < canvas.width; x += gridSize) {
+    const startX = -canvas.width / 2
+    const startY = -canvas.height / 2
+    for (let x = startX; x < canvas.width / 2; x += gridSize) {
       ctx.beginPath()
-      ctx.moveTo(x, 0)
-      ctx.lineTo(x, canvas.height)
+      ctx.moveTo(x, -canvas.height / 2)
+      ctx.lineTo(x, canvas.height / 2)
       ctx.stroke()
     }
-    for (let y = 0; y < canvas.height; y += gridSize) {
+    for (let y = startY; y < canvas.height / 2; y += gridSize) {
       ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(canvas.width, y)
+      ctx.moveTo(-canvas.width / 2, y)
+      ctx.lineTo(canvas.width / 2, y)
       ctx.stroke()
     }
+
+    // 绘制坐标轴
+    ctx.strokeStyle = '#333333'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.moveTo(-canvas.width / 2, 0)
+    ctx.lineTo(canvas.width / 2, 0)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(0, -canvas.height / 2)
+    ctx.lineTo(0, canvas.height / 2)
+    ctx.stroke()
 
     // 递归渲染 GameObject
     const renderGameObject = (obj: GameObject, parentTransform?: any) => {
@@ -406,11 +424,25 @@ export default function SceneEditor() {
 
     renderGameObject(scene.rootObject)
 
-    // 绘制坐标信息
+    ctx.restore()
+
+    // 绘制坐标信息（恢复到左上角坐标系）
     ctx.fillStyle = '#ffffff'
     ctx.font = '12px Arial'
     ctx.fillText(`Scene: ${scene.name}`, 10, 20)
+    ctx.fillText(`Objects: ${countGameObjects(scene.rootObject)}`, 10, 40)
   }, [scene, selectedObject, useEnginePreview])
+
+  // 辅助函数：统计 GameObject 数量
+  const countGameObjects = (obj: GameObject): number => {
+    let count = 1
+    if (obj.children) {
+      obj.children.forEach(child => {
+        count += countGameObjects(child)
+      })
+    }
+    return count
+  }
 
   return (
     <div className="flex h-full w-full">
