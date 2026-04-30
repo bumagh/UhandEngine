@@ -1188,7 +1188,7 @@ app.post('/api/engine/stop', (req, res) => {
   res.json({ success: true, message: 'Test stop request received' });
 });
 
-// Scene Preview API
+// Scene Preview API - POST to start preview
 app.post('/api/scene/preview', async (req, res) => {
   const { scene } = req.body;
 
