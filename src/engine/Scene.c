@@ -6,7 +6,6 @@
 
 // 递归遍历 GameObject 树
 static void UpdateGameObjectTree(GameObject *obj);
-static void RenderGameObjectTree(GameObject *obj, SDL_Renderer *renderer);
 
 // Scene 创建和销毁
 Scene *Scene_Create()
@@ -201,39 +200,47 @@ int IsGameObjectVisible(GameObject *go)
     return 1;
 }
 
+// 递归收集 GameObject 树到渲染队列（按 depth 排序）
+static void CollectGameObjectsForRender(GameObject *obj, RenderQueue *queue)
+{
+    if (!obj || !obj->visible)
+        return;
+
+    // 先收集子对象
+    GameObject *child = obj->firstChild;
+    while (child)
+    {
+        CollectGameObjectsForRender(child, queue);
+        child = child->nextSibling;
+    }
+
+    // 将当前对象添加到渲染队列（如果它有渲染能力）
+    if (obj->active && (obj->render || obj->components))
+    {
+        RenderQueue_Add(queue, obj);
+    }
+}
+
 void Scene_RenderGameObjects(Scene *scene, SDL_Renderer *renderer)
 {
     if (scene == NULL || renderer == NULL || scene->rootObject == NULL)
         return;
 
-    // 递归渲染所有对象
-    GameObject *obj = scene->rootObject->firstChild;
-    while (obj)
+    // 使用 RenderQueue 进行 depth 排序渲染
+    if (scene->renderQueue == NULL)
     {
-        RenderGameObjectTree(obj, renderer);
-        obj = obj->nextSibling;
-    }
-}
-
-// 递归渲染 GameObject 树
-static void RenderGameObjectTree(GameObject *obj, SDL_Renderer *renderer)
-{
-    if (!obj || !obj->visible)
-        return;
-
-    // 先渲染子对象（从后往前，保证父对象在子对象之后）
-    GameObject *child = obj->firstChild;
-    while (child)
-    {
-        RenderGameObjectTree(child, renderer);
-        child = child->nextSibling;
+        scene->renderQueue = RenderQueue_Create();
     }
 
-    // 渲染当前对象
-    if (obj->render && obj->active)
-    {
-        obj->render(obj, renderer, NULL);
-    }
+    // 清空队列
+    RenderQueue_Clear(scene->renderQueue);
+
+    // 收集所有 GameObject 到渲染队列
+    CollectGameObjectsForRender(scene->rootObject, scene->renderQueue);
+
+    // 按 depth 排序并渲染
+    RenderQueue_Sort(scene->renderQueue);
+    RenderQueue_Render(scene->renderQueue, renderer, NULL);
 }
 
 // 使用 RenderQueue 渲染 Scene（按 depth 排序）
