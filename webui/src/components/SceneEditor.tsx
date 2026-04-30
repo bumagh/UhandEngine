@@ -44,6 +44,9 @@ export default function SceneEditor() {
   const [previewLoading, setPreviewLoading] = useState(false)
   const [useEnginePreview, setUseEnginePreview] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null)
+  const [draggedObject, setDraggedObject] = useState<GameObject | null>(null)
 
   // 初始化示例场景
   useEffect(() => {
@@ -444,6 +447,120 @@ export default function SceneEditor() {
     return count
   }
 
+  // 辅助函数：查找点击的 GameObject
+  const findGameObjectAtPosition = (obj: GameObject, x: number, y: number, parentTransform?: any): GameObject | null => {
+    if (!obj.visible) return null
+
+    const transform = obj.transform
+    const objX = transform.x + (parentTransform?.x || 0)
+    const objY = transform.y + (parentTransform?.y || 0)
+    const width = transform.width || 64
+    const height = transform.height || 64
+
+    // 检查点是否在 GameObject 矩形内
+    const halfWidth = width / 2
+    const halfHeight = height / 2
+    if (x >= objX - halfWidth && x <= objX + halfWidth &&
+        y >= objY - halfHeight && y <= objY + halfHeight) {
+      return obj
+    }
+
+    // 递归检查子对象
+    if (obj.children) {
+      for (const child of obj.children) {
+        const found = findGameObjectAtPosition(child, x, y, { x: objX, y: objY })
+        if (found) return found
+      }
+    }
+
+    return null
+  }
+
+  // Canvas 坐标转换为场景坐标
+  const canvasToSceneCoords = (canvasX: number, canvasY: number): { x: number; y: number } => {
+    if (!canvasRef.current) return { x: 0, y: 0 }
+    const canvas = canvasRef.current
+    const centerX = canvas.width / 2
+    const centerY = canvas.height / 2
+    return {
+      x: canvasX - centerX,
+      y: canvasY - centerY
+    }
+  }
+
+  // 鼠标按下事件
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current || !scene || useEnginePreview) return
+
+    const canvas = canvasRef.current
+    const rect = canvas.getBoundingClientRect()
+    const canvasX = e.clientX - rect.left
+    const canvasY = e.clientY - rect.top
+
+    const sceneCoords = canvasToSceneCoords(canvasX, canvasY)
+    const clickedObject = findGameObjectAtPosition(scene.rootObject, sceneCoords.x, sceneCoords.y)
+
+    if (clickedObject && clickedObject.id !== 'root') {
+      setSelectedObject(clickedObject)
+      setIsDragging(true)
+      setDragStartPos(sceneCoords)
+      setDraggedObject(clickedObject)
+    }
+  }
+
+  // 鼠标移动事件
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging || !draggedObject || !canvasRef.current || !scene) return
+
+    const canvas = canvasRef.current
+    const rect = canvas.getBoundingClientRect()
+    const canvasX = e.clientX - rect.left
+    const canvasY = e.clientY - rect.top
+
+    const sceneCoords = canvasToSceneCoords(canvasX, canvasY)
+    const deltaX = sceneCoords.x - (dragStartPos?.x || 0)
+    const deltaY = sceneCoords.y - (dragStartPos?.y || 0)
+
+    // 更新 GameObject 位置
+    const updateObjectPosition = (obj: GameObject): GameObject => {
+      if (obj.id === draggedObject.id) {
+        return {
+          ...obj,
+          transform: {
+            ...obj.transform,
+            x: obj.transform.x + deltaX,
+            y: obj.transform.y + deltaY
+          }
+        }
+      }
+      if (obj.children) {
+        return {
+          ...obj,
+          children: obj.children.map(updateObjectPosition)
+        }
+      }
+      return obj
+    }
+
+    setScene(prev => prev ? { ...prev, rootObject: updateObjectPosition(prev.rootObject) } : null)
+    setSelectedObject(prev => prev ? {
+      ...prev,
+      transform: {
+        ...prev.transform,
+        x: prev.transform.x + deltaX,
+        y: prev.transform.y + deltaY
+      }
+    } : null)
+    setDragStartPos(sceneCoords)
+  }
+
+  // 鼠标释放事件
+  const handleMouseUp = () => {
+    setIsDragging(false)
+    setDragStartPos(null)
+    setDraggedObject(null)
+  }
+
   return (
     <div className="flex h-full w-full">
       {/* Left Panel - Hierarchy */}
@@ -572,8 +689,12 @@ export default function SceneEditor() {
           ) : (
             <canvas
               ref={canvasRef}
-              className="w-full h-full"
+              className="w-full h-full cursor-crosshair"
               title="Real-time Scene Preview"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
             />
           )}
         </div>
