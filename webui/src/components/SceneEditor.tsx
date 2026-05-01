@@ -56,6 +56,9 @@ export default function SceneEditor() {
   const [savedScenes, setSavedScenes] = useState<any[]>([])
   const [history, setHistory] = useState<Scene[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
+  const [snapEnabled, setSnapEnabled] = useState(true)
+  const [snapSize, setSnapSize] = useState(10)
+  const [showAlignmentGuides, setShowAlignmentGuides] = useState(true)
 
   // 初始化示例场景
   useEffect(() => {
@@ -512,7 +515,7 @@ export default function SceneEditor() {
     // 绘制网格（以中心为原点）
     ctx.strokeStyle = '#1a1a1a'
     ctx.lineWidth = 1 / zoom
-    const gridSize = 50
+    const gridSize = snapSize
     const startX = -canvas.width / 2 / zoom - panOffset.x / zoom
     const startY = -canvas.height / 2 / zoom - panOffset.y / zoom
     const endX = canvas.width / 2 / zoom - panOffset.x / zoom
@@ -542,6 +545,27 @@ export default function SceneEditor() {
     ctx.moveTo(0, startY)
     ctx.lineTo(0, endY)
     ctx.stroke()
+
+    // 绘制对齐辅助线
+    if (isDragging && draggedObject && showAlignmentGuides) {
+      const guides = findAlignmentGuides(draggedObject, scene.rootObject)
+      ctx.strokeStyle = '#00ff00'
+      ctx.lineWidth = 1 / zoom
+
+      guides.x.forEach(x => {
+        ctx.beginPath()
+        ctx.moveTo(x, startY)
+        ctx.lineTo(x, endY)
+        ctx.stroke()
+      })
+
+      guides.y.forEach(y => {
+        ctx.beginPath()
+        ctx.moveTo(startX, y)
+        ctx.lineTo(endX, y)
+        ctx.stroke()
+      })
+    }
 
     // 递归渲染 GameObject
     const renderGameObject = (obj: GameObject, parentTransform?: any) => {
@@ -609,7 +633,7 @@ export default function SceneEditor() {
     ctx.fillText(`Scene: ${scene.name}`, 10, 20)
     ctx.fillText(`Objects: ${countGameObjects(scene.rootObject)}`, 10, 40)
     ctx.fillText(`Zoom: ${(zoom * 100).toFixed(0)}%`, 10, 60)
-  }, [scene, selectedObject, useEnginePreview, zoom, panOffset])
+  }, [scene, selectedObject, useEnginePreview, zoom, panOffset, isDragging, draggedObject, snapSize, showAlignmentGuides])
 
   // 辅助函数：统计 GameObject 数量
   const countGameObjects = (obj: GameObject): number => {
@@ -661,6 +685,67 @@ export default function SceneEditor() {
       x: (canvasX - centerX - panOffset.x) / zoom,
       y: (canvasY - centerY - panOffset.y) / zoom
     }
+  }
+
+  // 网格吸附函数
+  const snapToGrid = (value: number): number => {
+    if (!snapEnabled) return value
+    return Math.round(value / snapSize) * snapSize
+  }
+
+  // 对齐辅助线检测
+  const findAlignmentGuides = (obj: GameObject, rootObject: GameObject): { x: number[]; y: number[] } => {
+    if (!showAlignmentGuides || !obj) return { x: [], y: [] }
+
+    const xGuides: number[] = []
+    const yGuides: number[] = []
+    const tolerance = 5
+
+    const collectTransforms = (node: GameObject, parentX: number = 0, parentY: number = 0) => {
+      if (node.id === obj.id) return
+
+      const transform = node.transform
+      const x = transform.x + parentX
+      const y = transform.y + parentY
+      const width = transform.width || 64
+      const height = transform.height || 64
+
+      const objX = obj.transform.x
+      const objY = obj.transform.y
+      const objWidth = obj.transform.width || 64
+      const objHeight = obj.transform.height || 64
+
+      // 检查 X 轴对齐
+      const xPositions = [x, x + width / 2, x - width / 2]
+      const objXPositions = [objX, objX + objWidth / 2, objX - objWidth / 2]
+
+      for (const objPos of objXPositions) {
+        for (const otherPos of xPositions) {
+          if (Math.abs(objPos - otherPos) < tolerance) {
+            xGuides.push(otherPos)
+          }
+        }
+      }
+
+      // 检查 Y 轴对齐
+      const yPositions = [y, y + height / 2, y - height / 2]
+      const objYPositions = [objY, objY + objHeight / 2, objY - objHeight / 2]
+
+      for (const objPos of objYPositions) {
+        for (const otherPos of yPositions) {
+          if (Math.abs(objPos - otherPos) < tolerance) {
+            yGuides.push(otherPos)
+          }
+        }
+      }
+
+      if (node.children) {
+        node.children.forEach(child => collectTransforms(child, x, y))
+      }
+    }
+
+    collectTransforms(rootObject)
+    return { x: [...new Set(xGuides)], y: [...new Set(yGuides)] }
   }
 
   // 缩放控制函数
@@ -749,12 +834,14 @@ export default function SceneEditor() {
     // 更新 GameObject 位置
     const updateObjectPosition = (obj: GameObject): GameObject => {
       if (obj.id === draggedObject.id) {
+        const newX = obj.transform.x + deltaX
+        const newY = obj.transform.y + deltaY
         return {
           ...obj,
           transform: {
             ...obj.transform,
-            x: obj.transform.x + deltaX,
-            y: obj.transform.y + deltaY
+            x: snapToGrid(newX),
+            y: snapToGrid(newY)
           }
         }
       }
@@ -767,13 +854,16 @@ export default function SceneEditor() {
       return obj
     }
 
+    const snappedDeltaX = snapToGrid(sceneCoords.x) - snapToGrid(dragStartPos?.x || 0)
+    const snappedDeltaY = snapToGrid(sceneCoords.y) - snapToGrid(dragStartPos?.y || 0)
+
     setScene(prev => prev ? { ...prev, rootObject: updateObjectPosition(prev.rootObject) } : null)
     setSelectedObject(prev => prev ? {
       ...prev,
       transform: {
         ...prev.transform,
-        x: prev.transform.x + deltaX,
-        y: prev.transform.y + deltaY
+        x: snapToGrid(prev.transform.x + snappedDeltaX),
+        y: snapToGrid(prev.transform.y + snappedDeltaY)
       }
     } : null)
     setDragStartPos(sceneCoords)
@@ -887,6 +977,31 @@ export default function SceneEditor() {
           <div className="flex items-center gap-2">
             {!useEnginePreview && (
               <>
+                <button
+                  onClick={() => setSnapEnabled(!snapEnabled)}
+                  className={`px-3 py-2 rounded text-sm ${snapEnabled ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'}`}
+                  title="Toggle Grid Snap"
+                >
+                  Snap
+                </button>
+                <select
+                  value={snapSize}
+                  onChange={(e) => setSnapSize(Number(e.target.value))}
+                  className="bg-gray-700 px-2 py-2 rounded text-sm"
+                  title="Snap Size"
+                >
+                  <option value={5}>5px</option>
+                  <option value={10}>10px</option>
+                  <option value={20}>20px</option>
+                  <option value={50}>50px</option>
+                </select>
+                <button
+                  onClick={() => setShowAlignmentGuides(!showAlignmentGuides)}
+                  className={`px-3 py-2 rounded text-sm ${showAlignmentGuides ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'}`}
+                  title="Toggle Alignment Guides"
+                >
+                  Guides
+                </button>
                 <button
                   onClick={handleZoomOut}
                   className="px-3 py-2 rounded bg-gray-600 hover:bg-gray-700 flex items-center gap-1 text-sm"
