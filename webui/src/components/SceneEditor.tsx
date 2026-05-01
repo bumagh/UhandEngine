@@ -53,6 +53,8 @@ export default function SceneEditor() {
   const [panStartPos, setPanStartPos] = useState<{ x: number; y: number } | null>(null)
   const [showSceneDialog, setShowSceneDialog] = useState(false)
   const [savedScenes, setSavedScenes] = useState<any[]>([])
+  const [history, setHistory] = useState<Scene[]>([])
+  const [historyIndex, setHistoryIndex] = useState(-1)
 
   // 初始化示例场景
   useEffect(() => {
@@ -94,6 +96,7 @@ export default function SceneEditor() {
       }
     }
     setScene(exampleScene)
+    pushToHistory(exampleScene)
   }, [])
 
   const toggleNode = (nodeId: string) => {
@@ -163,42 +166,41 @@ export default function SceneEditor() {
       return obj
     }
 
-    setScene({ ...scene, rootObject: updateVisibility(scene.rootObject) })
+    const newScene = { ...scene, rootObject: updateVisibility(scene.rootObject) }
+    setScene(newScene)
     if (selectedObject?.id === node.id) {
       setSelectedObject({ ...selectedObject, visible: !selectedObject.visible })
     }
+    pushToHistory(newScene)
   }
 
   const addGameObject = (type: 'sprite' | 'text' | 'container') => {
-    if (!scene || !selectedObject) return
+    if (!scene) return
 
     const newObject: GameObject = {
-      id: `object-${Date.now()}`,
-      name: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+      id: `obj-${Date.now()}`,
+      name: `${type.charAt(0).toUpperCase() + type.slice(1)} ${countGameObjects(scene.rootObject)}`,
       type,
       visible: true,
       active: true,
       depth: 0,
       transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, anchorX: 0.5, anchorY: 0.5, width: 64, height: 64 },
       children: [],
-      components: type === 'sprite' ? ['SpriteComponent'] : type === 'text' ? ['TextComponent'] : []
+      components: [type === 'sprite' ? 'SpriteComponent' : type === 'text' ? 'TextComponent' : '']
     }
 
-    const addToTree = (obj: GameObject): GameObject => {
-      if (obj.id === selectedObject.id) {
-        return {
-          ...obj,
-          children: [...(obj.children || []), newObject]
-        }
+    const addObject = (obj: GameObject): GameObject => {
+      if (obj.children && obj.children.length > 0) {
+        return { ...obj, children: [...obj.children, newObject] }
       }
-      if (obj.children) {
-        return { ...obj, children: obj.children.map(addToTree) }
-      }
-      return obj
+      return { ...obj, children: [newObject] }
     }
 
-    setScene({ ...scene, rootObject: addToTree(scene.rootObject) })
-    setExpandedNodes(new Set([...expandedNodes, selectedObject.id]))
+    const newScene = { ...scene, rootObject: addObject(scene.rootObject) }
+    setScene(newScene)
+    setSelectedObject(newObject)
+    setExpandedNodes(new Set([...expandedNodes, newObject.id]))
+    pushToHistory(newScene)
   }
 
   const deleteGameObject = (nodeId: string) => {
@@ -217,15 +219,17 @@ export default function SceneEditor() {
 
     const newRoot = removeFromTree(scene.rootObject)
     if (newRoot) {
-      setScene({ ...scene, rootObject: newRoot })
+      const newScene = { ...scene, rootObject: newRoot }
+      setScene(newScene)
       if (selectedObject?.id === nodeId) {
         setSelectedObject(null)
       }
+      pushToHistory(newScene)
     }
   }
 
   const updateTransform = (property: keyof GameObject['transform'], value: number) => {
-    if (!selectedObject) return
+    if (!selectedObject || !scene) return
 
     const updateProperty = (obj: GameObject): GameObject => {
       if (obj.id === selectedObject.id) {
@@ -240,8 +244,10 @@ export default function SceneEditor() {
       return obj
     }
 
-    setScene(prev => prev ? { ...prev, rootObject: updateProperty(prev.rootObject) } : null)
+    const newScene: Scene = { ...scene, rootObject: updateProperty(scene.rootObject) }
+    setScene(newScene)
     setSelectedObject({ ...selectedObject, transform: { ...selectedObject.transform, [property]: value } })
+    pushToHistory(newScene)
   }
 
   // 场景持久化函数（使用后端 API）
@@ -286,6 +292,7 @@ export default function SceneEditor() {
       if (data.success) {
         setScene(data.scene)
         setShowSceneDialog(false)
+        pushToHistory(data.scene)
       } else {
         console.error('Failed to load scene:', data.error)
       }
@@ -314,6 +321,51 @@ export default function SceneEditor() {
     loadScenes()
     setShowSceneDialog(true)
   }
+
+  // 撤销/重做功能
+  const pushToHistory = (newScene: Scene) => {
+    const newHistory = history.slice(0, historyIndex + 1)
+    newHistory.push(JSON.parse(JSON.stringify(newScene)))
+    setHistory(newHistory)
+    setHistoryIndex(newHistory.length - 1)
+  }
+
+  const undo = () => {
+    if (historyIndex > 0) {
+      const prevIndex = historyIndex - 1
+      setHistoryIndex(prevIndex)
+      setScene(JSON.parse(JSON.stringify(history[prevIndex])))
+    }
+  }
+
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextIndex = historyIndex + 1
+      setHistoryIndex(nextIndex)
+      setScene(JSON.parse(JSON.stringify(history[nextIndex])))
+    }
+  }
+
+  // 键盘快捷键
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z' && !e.shiftKey) {
+          e.preventDefault()
+          undo()
+        } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+          e.preventDefault()
+          redo()
+        } else if (e.key === 's') {
+          e.preventDefault()
+          saveScene()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [historyIndex, history.length])
 
   const startPreview = async () => {
     if (!scene) return
@@ -645,6 +697,9 @@ export default function SceneEditor() {
 
   // 鼠标释放事件
   const handleMouseUp = () => {
+    if (isDragging && scene) {
+      pushToHistory(scene)
+    }
     setIsDragging(false)
     setIsPanning(false)
     setDragStartPos(null)
@@ -659,17 +714,35 @@ export default function SceneEditor() {
         className={`${leftPanelCollapsed ? 'w-0' : 'flex-1 min-w-0 max-w-md'} bg-gray-800 flex flex-col border-r border-gray-700 transition-all duration-300 overflow-hidden`}
         style={{ flexBasis: leftPanelCollapsed ? '0' : 'auto' }}
       >
-        <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+        <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
           <h2 className="text-lg font-semibold flex items-center gap-2 whitespace-nowrap">
             <Layers className="w-5 h-5" />
-            Scene Hierarchy
+            Hierarchy
           </h2>
-          <button
-            onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
-            className="p-1 hover:bg-gray-700 rounded flex-shrink-0"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={undo}
+              disabled={historyIndex <= 0}
+              className="p-2 hover:bg-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Undo (Ctrl+Z)"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={redo}
+              disabled={historyIndex >= history.length - 1}
+              className="p-2 hover:bg-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Redo (Ctrl+Y)"
+            >
+              <ChevronRightIcon className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+              className="p-2 hover:bg-gray-700 rounded"
+            >
+              {leftPanelCollapsed ? <ChevronRightIcon className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
         
         {!leftPanelCollapsed && (
