@@ -1268,6 +1268,95 @@ app.delete('/api/scene/preview', (req, res) => {
   }
 });
 
+// Scene Persistence API
+const SCENES_DIR = path.join(__dirname, '../../scenes');
+
+// Ensure scenes directory exists
+if (!fs.existsSync(SCENES_DIR)) {
+  fs.mkdirSync(SCENES_DIR, { recursive: true });
+}
+
+// GET /api/scenes - List all saved scenes
+app.get('/api/scenes', (req, res) => {
+  try {
+    const files = fs.readdirSync(SCENES_DIR)
+      .filter(file => file.endsWith('.json'))
+      .map(file => {
+        const filePath = path.join(SCENES_DIR, file);
+        const stats = fs.statSync(filePath);
+        const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        return {
+          name: file.replace('.json', ''),
+          file: file,
+          sceneName: content.name || 'Untitled',
+          modified: stats.mtime,
+          size: stats.size
+        };
+      });
+    res.json({ success: true, scenes: files });
+  } catch (error) {
+    console.error('Failed to list scenes:', error);
+    res.status(500).json({ success: false, error: 'Failed to list scenes' });
+  }
+});
+
+// GET /api/scenes/:name - Load a specific scene
+app.get('/api/scenes/:name', (req, res) => {
+  try {
+    const sceneName = req.params.name;
+    const filePath = path.join(SCENES_DIR, `${sceneName}.json`);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, error: 'Scene not found' });
+    }
+
+    const sceneData = fs.readFileSync(filePath, 'utf8');
+    const scene = JSON.parse(sceneData);
+    res.json({ success: true, scene });
+  } catch (error) {
+    console.error('Failed to load scene:', error);
+    res.status(500).json({ success: false, error: 'Failed to load scene' });
+  }
+});
+
+// POST /api/scenes - Save a scene
+app.post('/api/scenes', (req, res) => {
+  try {
+    const { scene, name } = req.body;
+
+    if (!scene) {
+      return res.status(400).json({ success: false, error: 'Scene data is required' });
+    }
+
+    const sceneName = name || scene.name || 'untitled';
+    const filePath = path.join(SCENES_DIR, `${sceneName}.json`);
+
+    fs.writeFileSync(filePath, JSON.stringify(scene, null, 2));
+    res.json({ success: true, message: 'Scene saved successfully', name: sceneName });
+  } catch (error) {
+    console.error('Failed to save scene:', error);
+    res.status(500).json({ success: false, error: 'Failed to save scene' });
+  }
+});
+
+// DELETE /api/scenes/:name - Delete a scene
+app.delete('/api/scenes/:name', (req, res) => {
+  try {
+    const sceneName = req.params.name;
+    const filePath = path.join(SCENES_DIR, `${sceneName}.json`);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, error: 'Scene not found' });
+    }
+
+    fs.unlinkSync(filePath);
+    res.json({ success: true, message: 'Scene deleted successfully' });
+  } catch (error) {
+    console.error('Failed to delete scene:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete scene' });
+  }
+});
+
 app.post('/api/pipeline/generate-code', async (req, res) => {
   const { design, requirements, platform } = req.body;
 

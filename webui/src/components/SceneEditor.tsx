@@ -51,6 +51,8 @@ export default function SceneEditor() {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [isPanning, setIsPanning] = useState(false)
   const [panStartPos, setPanStartPos] = useState<{ x: number; y: number } | null>(null)
+  const [showSceneDialog, setShowSceneDialog] = useState(false)
+  const [savedScenes, setSavedScenes] = useState<any[]>([])
 
   // 初始化示例场景
   useEffect(() => {
@@ -242,32 +244,75 @@ export default function SceneEditor() {
     setSelectedObject({ ...selectedObject, transform: { ...selectedObject.transform, [property]: value } })
   }
 
-  const saveScene = () => {
+  // 场景持久化函数（使用后端 API）
+  const saveScene = async (name?: string) => {
     if (!scene) return
-    const json = JSON.stringify(scene, null, 2)
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${scene.name}.json`
-    a.click()
-    URL.revokeObjectURL(url)
+
+    const sceneName = name || scene.name || 'untitled'
+    try {
+      const response = await fetch('/api/scenes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scene, name: sceneName })
+      })
+      const data = await response.json()
+      if (data.success) {
+        console.log('Scene saved:', data.name)
+        loadScenes()
+      } else {
+        console.error('Failed to save scene:', data.error)
+      }
+    } catch (error) {
+      console.error('Failed to save scene:', error)
+    }
   }
 
-  const loadScene = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
-        const loadedScene = JSON.parse(e.target?.result as string)
-        setScene(loadedScene)
-      } catch (error) {
-        console.error('Failed to load scene:', error)
+  const loadScenes = async () => {
+    try {
+      const response = await fetch('/api/scenes')
+      const data = await response.json()
+      if (data.success) {
+        setSavedScenes(data.scenes)
       }
+    } catch (error) {
+      console.error('Failed to load scenes:', error)
     }
-    reader.readAsText(file)
+  }
+
+  const loadScene = async (sceneName: string) => {
+    try {
+      const response = await fetch(`/api/scenes/${sceneName}`)
+      const data = await response.json()
+      if (data.success) {
+        setScene(data.scene)
+        setShowSceneDialog(false)
+      } else {
+        console.error('Failed to load scene:', data.error)
+      }
+    } catch (error) {
+      console.error('Failed to load scene:', error)
+    }
+  }
+
+  const deleteScene = async (sceneName: string) => {
+    try {
+      const response = await fetch(`/api/scenes/${sceneName}`, {
+        method: 'DELETE'
+      })
+      const data = await response.json()
+      if (data.success) {
+        loadScenes()
+      } else {
+        console.error('Failed to delete scene:', data.error)
+      }
+    } catch (error) {
+      console.error('Failed to delete scene:', error)
+    }
+  }
+
+  const handleOpenSceneDialog = () => {
+    loadScenes()
+    setShowSceneDialog(true)
   }
 
   const startPreview = async () => {
@@ -659,17 +704,19 @@ export default function SceneEditor() {
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={saveScene}
+                  onClick={() => saveScene()}
                   className="flex-1 bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
                 >
                   <Save className="w-4 h-4 flex-shrink-0" />
                   <span className="truncate">Save</span>
                 </button>
-                <label className="flex-1 bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm cursor-pointer">
+                <button
+                  onClick={handleOpenSceneDialog}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded flex items-center justify-center gap-2 text-sm"
+                >
                   <FolderOpen className="w-4 h-4 flex-shrink-0" />
                   <span className="truncate">Load</span>
-                  <input type="file" accept=".json" onChange={loadScene} className="hidden" />
-                </label>
+                </button>
               </div>
             </div>
           </>
@@ -998,6 +1045,52 @@ export default function SceneEditor() {
           </div>
         )}
       </div>
+
+      {/* Scene Dialog */}
+      {showSceneDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-4">Load Scene</h2>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {savedScenes.length === 0 ? (
+                <div className="text-gray-500 text-center py-4">No saved scenes</div>
+              ) : (
+                savedScenes.map((savedScene) => (
+                  <div
+                    key={savedScene.name}
+                    className="bg-gray-700 p-3 rounded flex items-center justify-between hover:bg-gray-600"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium">{savedScene.sceneName}</div>
+                      <div className="text-xs text-gray-400">{savedScene.name}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => loadScene(savedScene.name)}
+                        className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm"
+                      >
+                        Load
+                      </button>
+                      <button
+                        onClick={() => deleteScene(savedScene.name)}
+                        className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <button
+              onClick={() => setShowSceneDialog(false)}
+              className="mt-4 w-full bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
