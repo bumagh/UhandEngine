@@ -36,6 +36,7 @@ interface Scene {
 export default function SceneEditor() {
   const [scene, setScene] = useState<Scene | null>(null)
   const [selectedObject, setSelectedObject] = useState<GameObject | null>(null)
+  const [selectedObjects, setSelectedObjects] = useState<Set<string>>(new Set())
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
   const [isPreviewing, setIsPreviewing] = useState(false)
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false)
@@ -112,6 +113,7 @@ export default function SceneEditor() {
   const renderGameObjectTree = (node: GameObject, level: number = 0): JSX.Element => {
     const isExpanded = expandedNodes.has(node.id)
     const isSelected = selectedObject?.id === node.id
+    const isMultiSelected = selectedObjects.has(node.id)
     const hasChildren = node.children && node.children.length > 0
 
     const getIcon = () => {
@@ -127,10 +129,24 @@ export default function SceneEditor() {
       <div key={node.id}>
         <div
           className={`flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-gray-700 ${
-            isSelected ? 'bg-blue-600' : ''
+            isSelected || isMultiSelected ? 'bg-blue-600' : ''
           }`}
           style={{ paddingLeft: `${level * 16 + 8}px` }}
-          onClick={() => setSelectedObject(node)}
+          onClick={(e) => {
+            if (e.shiftKey) {
+              const newSelected = new Set(selectedObjects)
+              if (newSelected.has(node.id)) {
+                newSelected.delete(node.id)
+              } else {
+                newSelected.add(node.id)
+              }
+              setSelectedObjects(newSelected)
+              setSelectedObject(node)
+            } else {
+              setSelectedObjects(new Set())
+              setSelectedObject(node)
+            }
+          }}
         >
           {hasChildren ? (
             <button onClick={(e) => { e.stopPropagation(); toggleNode(node.id) }}>
@@ -224,6 +240,36 @@ export default function SceneEditor() {
       if (selectedObject?.id === nodeId) {
         setSelectedObject(null)
       }
+      if (selectedObjects.has(nodeId)) {
+        const newSelected = new Set(selectedObjects)
+        newSelected.delete(nodeId)
+        setSelectedObjects(newSelected)
+      }
+      pushToHistory(newScene)
+    }
+  }
+
+  const deleteSelectedObjects = () => {
+    if (!scene || selectedObjects.size === 0) return
+
+    const idsToDelete = Array.from(selectedObjects)
+    const removeFromTree = (obj: GameObject): GameObject | null => {
+      if (idsToDelete.includes(obj.id)) {
+        return null
+      }
+      if (obj.children) {
+        const filteredChildren = obj.children.map(removeFromTree).filter(Boolean) as GameObject[]
+        return { ...obj, children: filteredChildren }
+      }
+      return obj
+    }
+
+    const newRoot = removeFromTree(scene.rootObject)
+    if (newRoot) {
+      const newScene = { ...scene, rootObject: newRoot }
+      setScene(newScene)
+      setSelectedObject(null)
+      setSelectedObjects(new Set())
       pushToHistory(newScene)
     }
   }
@@ -231,23 +277,46 @@ export default function SceneEditor() {
   const updateTransform = (property: keyof GameObject['transform'], value: number) => {
     if (!selectedObject || !scene) return
 
-    const updateProperty = (obj: GameObject): GameObject => {
-      if (obj.id === selectedObject.id) {
-        return {
-          ...obj,
-          transform: { ...obj.transform, [property]: value }
+    if (selectedObjects.size > 1) {
+      // 批量修改
+      const idsToUpdate = Array.from(selectedObjects)
+      const updateProperty = (obj: GameObject): GameObject => {
+        if (idsToUpdate.includes(obj.id)) {
+          return {
+            ...obj,
+            transform: { ...obj.transform, [property]: value }
+          }
         }
+        if (obj.children) {
+          return { ...obj, children: obj.children.map(updateProperty) }
+        }
+        return obj
       }
-      if (obj.children) {
-        return { ...obj, children: obj.children.map(updateProperty) }
-      }
-      return obj
-    }
 
-    const newScene: Scene = { ...scene, rootObject: updateProperty(scene.rootObject) }
-    setScene(newScene)
-    setSelectedObject({ ...selectedObject, transform: { ...selectedObject.transform, [property]: value } })
-    pushToHistory(newScene)
+      const newScene: Scene = { ...scene, rootObject: updateProperty(scene.rootObject) }
+      setScene(newScene)
+      setSelectedObject({ ...selectedObject, transform: { ...selectedObject.transform, [property]: value } })
+      pushToHistory(newScene)
+    } else {
+      // 单个修改
+      const updateProperty = (obj: GameObject): GameObject => {
+        if (obj.id === selectedObject.id) {
+          return {
+            ...obj,
+            transform: { ...obj.transform, [property]: value }
+          }
+        }
+        if (obj.children) {
+          return { ...obj, children: obj.children.map(updateProperty) }
+        }
+        return obj
+      }
+
+      const newScene: Scene = { ...scene, rootObject: updateProperty(scene.rootObject) }
+      setScene(newScene)
+      setSelectedObject({ ...selectedObject, transform: { ...selectedObject.transform, [property]: value } })
+      pushToHistory(newScene)
+    }
   }
 
   // 场景持久化函数（使用后端 API）
@@ -630,10 +699,25 @@ export default function SceneEditor() {
     const clickedObject = findGameObjectAtPosition(scene.rootObject, sceneCoords.x, sceneCoords.y)
 
     if (clickedObject && clickedObject.id !== 'root') {
-      setSelectedObject(clickedObject)
-      setIsDragging(true)
-      setDragStartPos(sceneCoords)
-      setDraggedObject(clickedObject)
+      if (e.shiftKey) {
+        const newSelected = new Set(selectedObjects)
+        if (newSelected.has(clickedObject.id)) {
+          newSelected.delete(clickedObject.id)
+        } else {
+          newSelected.add(clickedObject.id)
+        }
+        setSelectedObjects(newSelected)
+        setSelectedObject(clickedObject)
+      } else {
+        setSelectedObject(clickedObject)
+        setSelectedObjects(new Set())
+        setIsDragging(true)
+        setDragStartPos(sceneCoords)
+        setDraggedObject(clickedObject)
+      }
+    } else {
+      setSelectedObject(null)
+      setSelectedObjects(new Set())
     }
   }
 
@@ -903,7 +987,16 @@ export default function SceneEditor() {
             Inspector
           </h2>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {selectedObject && (
+            {selectedObjects.size > 0 && (
+              <button
+                onClick={deleteSelectedObjects}
+                className="p-2 bg-red-600 hover:bg-red-700 rounded"
+                title={`Delete ${selectedObjects.size} selected objects`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+            {selectedObject && selectedObjects.size === 0 && (
               <button
                 onClick={() => deleteGameObject(selectedObject.id)}
                 className="p-2 bg-red-600 hover:bg-red-700 rounded"
