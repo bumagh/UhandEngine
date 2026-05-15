@@ -1,0 +1,72 @@
+{
+  "id": "scene-1",
+  "name": "Main Scene",
+  "rootObject": {
+    "id": "root",
+    "name": "Root",
+    "type": "container",
+    "visible": true,
+    "active": true,
+    "depth": 0,
+    "transform": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "width": 0,
+      "height": 0
+    },
+    "children": [
+      {
+        "id": "child-1",
+        "name": "Background",
+        "type": "sprite",
+        "visible": true,
+        "active": true,
+        "depth": 0,
+        "transform": {
+          "x": 107.15680338192075,
+          "y": -23.66879626208761,
+          "rotation": 0,
+          "scaleX": 1,
+          "scaleY": 1,
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "width": 800,
+          "height": 600
+        },
+        "children": [],
+        "components": [
+          "SpriteComponent"
+        ]
+      },
+      {
+        "id": "child-2",
+        "name": "Player",
+        "type": "sprite",
+        "visible": true,
+        "active": true,
+        "depth": 1,
+        "transform": {
+          "x": 100,
+          "y": 100,
+          "rotation": 0,
+          "scaleX": 1,
+          "scaleY": 1,
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "width": 64,
+          "height": 64
+        },
+        "children": [],
+        "components": [
+          "SpriteComponent",
+          "Transform"
+        ]
+      }
+    ]
+  }
+}
